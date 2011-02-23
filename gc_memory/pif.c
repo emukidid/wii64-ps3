@@ -53,6 +53,8 @@ BOOL mempakWritten = FALSE;
 void check_input_sync(unsigned char *value);
 
 int loadEeprom(){
+	int i;
+	for (i=0; i<0x800; i++) eeprom[i] = 0;
 	return 1;
 }
 

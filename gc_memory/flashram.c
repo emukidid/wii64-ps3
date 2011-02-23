@@ -57,6 +57,8 @@ static u32 erase_offset, write_pointer;
 BOOL flashramWritten = FALSE;
 
 int loadFlashram(){
+	int i;
+	for (i=0; i<0x20000; i++) flashram[i] = 0xff;
 	return 1;
 }
 

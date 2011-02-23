@@ -3294,7 +3294,7 @@ void pure_interpreter()
 	//if(r4300.pc == 0x80000194) _break();
 	//if (Count > 0x2000000) printf("inter:%x,%x\n", r4300.pc,op);
 	//if ((Count+debug_count) > 0xabaa2c) r4300.stop=1;
-	dbg_printf("Executing pc: %08X instr:%08X addr: %08X\r\n",r4300.pc,op,address);
+	//dbg_printf("Executing pc: %08X instr:%08X addr: %08X\r\n",r4300.pc,op,address);
 	interp_ops[((op >> 26) & 0x3F)]();
 	
 	//Count = (u32)Count + 2;

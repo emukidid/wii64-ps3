@@ -53,6 +53,8 @@ static unsigned char sram[0x8000] __attribute__((aligned(32)));
 BOOL sramWritten = FALSE;
 
 int loadSram(){
+	int i;
+	for (i=0; i<0x8000; i++) sram[i] = 0;
 	return 1;
 }
 

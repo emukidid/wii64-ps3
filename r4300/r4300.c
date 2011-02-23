@@ -208,7 +208,7 @@ void cpu_init(void){
 
    j=0;
    debug_count = 0;
-   memcpy(&SP_DMEM[0x40], &rom[0x40], 0xFBC);
+   memcpy((char*)SP_DMEM+0x40, &rom[0x40], 0xFBC);
    r4300.delay_slot=0;
    r4300.skip_jump=0;
    r4300.stop = 0;
@@ -444,6 +444,7 @@ void cpu_init(void){
 
 void cpu_deinit(void){
 	// No need to check these if we were in the pure interp
-
+if(PC) free(PC);
+	PC = NULL;
 }
 
