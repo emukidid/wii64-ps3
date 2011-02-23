@@ -79,13 +79,13 @@ AiLenChanged( void )
 	short* stream = (short*)(AudioInfo.RDRAM +
 		         (*AudioInfo.AI_DRAM_ADDR_REG & 0xFFFFFF));
 	length = *AudioInfo.AI_LEN_REG;
-	dbg_printf("AiLenChanged. stream: %04X, length %08X\r\n",stream,length);
+	//dbg_printf("AiLenChanged. stream: %04X, length %08X\r\n",stream,length);
 }
 
 EXPORT DWORD CALL
 AiReadLength( void )
 {
-	dbg_printf("AiReadLength. length %08X\r\n",length);
+	//dbg_printf("AiReadLength. length %08X\r\n",length);
 	length -= ((length>>2)-0x100);
 	if(length<0) length = 0;
 	return length;
