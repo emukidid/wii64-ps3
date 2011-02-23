@@ -37,6 +37,9 @@
 #ifdef DEBUGON
 # include <debug.h>
 #endif
+#include <rsx/rsx.h>
+#include <sysutil/video.h>
+#include "../main/rsxutil.h"
 
 
 VI::VI(GFX_INFO info) : gfxInfo(info), bpp(0)
@@ -113,6 +116,9 @@ unsigned int convert_pixels(short src1, short src2){
 	 
 	return (y1 << 24) | (cb << 16) | (y2 << 8) | cr;
 }
+
+extern u32 *color_buffer[2];
+extern VideoResolution res;
 
 void VI::updateScreen()
 {
@@ -239,7 +245,7 @@ void VI::updateScreen()
 	  }
      }*/
 
-   //N64 Framebuffer is in RGB5A1 format, so shift by 1 and retile.
+/*   //N64 Framebuffer is in RGB5A1 format, so shift by 1 and retile.
 	for (int j=0; j<480; j+=4)
 	{
 		for (int i=0; i<640; i+=4)
@@ -268,7 +274,24 @@ void VI::updateScreen()
 				}
 			}
 		}
+	}*/
+
+   //N64 Framebuffer is in RGB5A1 format. Write it directly to the current RSX framebuffer.
+	u32* buffer = color_buffer[curr_fb];
+	for (int j=0; j<480; j++)
+	{
+		for (int i=0; i<640; i++)
+		{
+			px = scale_x*i;
+			py = scale_y*j;
+			u16 color16 = im16[((int)py*(*gfxInfo.VI_WIDTH_REG)+(int)px)];
+			u32 color = ((color16 & 0xF800)<<8) | ((color16 & 0x07C0)>>3) | ((color16 & 0x003E)<<2); //XRGB
+			//color = (j%256 << 8) ;
+			buffer[j*res.width + i] = color; 
+		}
 	}
+	flip();
+
 /*
 	GX_SetCopyClear ((GXColor){0,0,0,255}, 0xFFFFFF);
 	GX_CopyDisp (vi->getScreenPointer(), GX_TRUE);	//clear the EFB before executing new Dlist
@@ -328,7 +351,7 @@ void VI::updateScreen()
 */
    //printf(" done.\nBlitting...");
    //fflush(stdout);
-   blit();
+//   blit();
    //printf(" done.\n");
 }
 

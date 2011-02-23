@@ -3107,39 +3107,52 @@ void read_rom()
 	lastwrite = 0;
      }
    else {
-	 unsigned int *ptr = (unsigned int*)rdword+1;
+/*	 unsigned int *ptr = (unsigned int*)rdword+1;
      *ptr = *((u32 *)(rom + (address & 0x03FFFFFF)));
      //assert(rdword);
      //ROMCache_read((unsigned int*)rdword+1, (address & 0x03FFFFFF), 4);
-     sign_extended(*rdword);
+     sign_extended(*rdword);*/
+
+     //From mupen64plus
+     *rdword = *((unsigned int *)(rom + (address & 0x03FFFFFF)));
    }
 }
 
 void read_romb()
 {
-	unsigned int *ptr = (unsigned int*)((char*)rdword+7);
+/*	unsigned int *ptr = (unsigned int*)((char*)rdword+7);
     *ptr = *(rom + ((address^S8) & 0x03FFFFFF));
    //assert(rdword);
    //ROMCache_read((unsigned int*)((char*)rdword+7), (address & 0x03FFFFFF), 1);
-   sign_extendedb(*rdword);
+   sign_extendedb(*rdword);*/
+
+   //From mupen64plus
+   *rdword = *(rom + ((address^S8) & 0x03FFFFFF));
 }
 
 void read_romh()
 {
-	unsigned int *ptr = (unsigned int*)((short*)rdword+3);
+/*	unsigned int *ptr = (unsigned int*)((short*)rdword+3);
     *ptr = *((unsigned short *)(rom + ((address^S16) & 0x03FFFFFF)));
 
    //assert(rdword);
    //ROMCache_read((unsigned int*)((short*)rdword+3), (address & 0x03FFFFFF), 2);
-   sign_extendedh(*rdword);
+   sign_extendedh(*rdword);*/
+
+   //From mupen64plus
+   *rdword = *((unsigned short *)(rom + ((address^S16) & 0x03FFFFFF)));
 }
 
 void read_romd()
 {   
-   *rdword = ((unsigned long long)(*((u32 *)(rom+(address&0x03FFFFFF))))<<32)|
+/*   *rdword = ((unsigned long long)(*((u32 *)(rom+(address&0x03FFFFFF))))<<32)|
      *((u32 *)(rom + ((address+4)&0x03FFFFFF)));
    //assert(rdword);
-   //ROMCache_read((unsigned int*)rdword, (address & 0x03FFFFFF), 8);
+   //ROMCache_read((unsigned int*)rdword, (address & 0x03FFFFFF), 8);*/
+
+   //From mupen64plus
+   *rdword = ((unsigned long long)(*((unsigned int *)(rom+(address&0x03FFFFFF))))<<32)|
+     *((unsigned int *)(rom + ((address+4)&0x03FFFFFF)));
 }
 
 void write_rom()

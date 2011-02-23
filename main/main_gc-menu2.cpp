@@ -59,6 +59,13 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <net/socket.h>
+
+#include <assert.h>
+#include <io/pad.h>
+#include <sysutil/video.h>
+#include <rsx/rsx.h>
+#include "rsxutil.h"
+
 int s;
 struct sockaddr_in server;
 #define TESTIP				"192.168.1.100"
@@ -135,8 +142,16 @@ void new_vi(){ }
 int loadROM();
 
 int main(int argc, char* argv[]){
+
 	/* INITIALIZE */
 Initialise();
+
+	void *host_addr = memalign(1024*1024,HOST_SIZE);
+
+	init_screen(host_addr,HOST_SIZE);
+	ioPadInit(7);
+	setRenderTarget(curr_fb);
+
 	loadROM();
 	go();
 	return 0;
