@@ -39,13 +39,13 @@
 
 R4300 r4300;
 
-u32 i, dynacore = 2, interpcore = 0;
+u32 i;
 int no_audio_delay = 0;
 int no_compiled_jump = 0;
 tlb tlb_e[32];
 u32 dyna_interp = 0;
 unsigned long long int debug_count = 0;
-precomp_instr *PC;
+precomp_instr *PC = NULL;
 //char invalid_code[0x100000];
 int rounding_mode = 0x33F, trunc_mode = 0xF3F, round_mode = 0x33F,
     ceil_mode = 0xB3F, floor_mode = 0x73F;
@@ -192,13 +192,8 @@ static int cpu_inited;
 void go()
 {
 	r4300.stop = 0;
-	
-	if(dynacore == 2) {
-		dynacore = 0;
-		interpcore = 1;
-		pure_interpreter();
-		dynacore = 2;
-	} 
+	pure_interpreter();
+
 	debug_count += Count;
 }
 extern void dbg_printf(const char *fmt,...);
@@ -433,7 +428,6 @@ void cpu_init(void){
    r4300.last_pc = 0xa4000040;
    r4300.next_interrupt = 624999;
    init_interupt();
-   interpcore = 0;
 
    // I'm adding this from pure_interpreter()
    r4300.pc = 0xa4000040;

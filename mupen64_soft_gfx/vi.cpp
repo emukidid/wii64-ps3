@@ -51,12 +51,9 @@ VI::~VI()
 {
 	free(FBtex);
 }
-extern "C" {
-extern void dbg_printf(const char *fmt,...);
-};
+
 void VI::statusChanged()
 {
-	dbg_printf("statusChanged: %08x\r\n",*gfxInfo.VI_STATUS_REG);
    switch (*gfxInfo.VI_STATUS_REG & 3)
      {
       case 2:
@@ -126,8 +123,8 @@ extern VideoResolution res;
 void VI::updateScreen()
 {
 //   printf("Should be updating screen: bpp = %d, width_reg = %d\n", bpp, *gfxInfo.VI_WIDTH_REG);
-   if (!bpp) {dbg_printf("!bpp\r\n");return;}
-   if (!*gfxInfo.VI_WIDTH_REG) {dbg_printf("!*gfxInfo.VI_WIDTH_REG)\r\n");return;}
+   if (!bpp) {return;}
+   if (!*gfxInfo.VI_WIDTH_REG) {return;}
    int h_end = *gfxInfo.VI_H_START_REG & 0x3FF;
    int h_start = (*gfxInfo.VI_H_START_REG >> 16) & 0x3FF;
    int v_end = *gfxInfo.VI_V_START_REG & 0x3FF;
@@ -278,7 +275,6 @@ void VI::updateScreen()
 			}
 		}
 	}*/
-	dbg_printf("line 279\r\n");
 
    //N64 Framebuffer is in RGB5A1 format. Write it directly to the current RSX framebuffer.
 	u32* buffer = color_buffer[curr_fb];

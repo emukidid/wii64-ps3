@@ -30,7 +30,7 @@
 #ifndef MACROS_H
 #define MACROS_H
 
-#define sign_extended(a) a = (long long)((long)a)
+#define sign_extended(a) a = (long long)((s32)a)
 #define sign_extendedb(a) a |= (a&0x80) ? 0xFFFFFFFFFFFFFF00ULL : 0
 #define sign_extendedh(a) a |= (a&0x8000) ? 0xFFFFFFFFFFFF0000ULL : 0
 
