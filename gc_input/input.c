@@ -166,6 +166,7 @@ EXPORT void CALL GetDllInfo ( PLUGIN_INFO * PluginInfo )
 extern int stop;
 EXPORT void CALL GetKeys(int Control, BUTTONS * Keys )
 {
+	memset(Keys, 0, sizeof(BUTTONS));
 }
 
 /******************************************************************

@@ -37,27 +37,58 @@
 #include "AudioPlugin.h"
 #include "Audio_#1.1.h"
 
-
+static unsigned int freq;
+static unsigned int real_freq;
+static float freq_ratio;
 AUDIO_INFO AudioInfo;
-
+extern void dbg_printf(const char *fmt,...);
 char audioEnabled;
 
 EXPORT void CALL
-AiDacrateChanged( int SystemType )
-{
+AiDacrateChanged( int SystemType ) {
+	freq = 32000; //default to 32khz incase we get a bad systemtype
+	switch (SystemType){
+	      case SYSTEM_NTSC:
+		freq = 48681812 / (*AudioInfo.AI_DACRATE_REG + 1);
+		break;
+	      case SYSTEM_PAL:
+		freq = 49656530 / (*AudioInfo.AI_DACRATE_REG + 1);
+		break;
+	      case SYSTEM_MPAL:
+		freq = 48628316 / (*AudioInfo.AI_DACRATE_REG + 1);
+		break;
+	}
+
+	// Calculate the absolute differences from 32 and 48khz
+	int diff32 = freq - 32000;
+	int diff48 = freq - 48000;
+	diff32 = diff32 > 0 ? diff32 : -diff32;
+	diff48 = diff48 > 0 ? diff48 : -diff48;
+	// Choose the closest real frequency
+	real_freq = (diff32 < diff48) ? 32000 : 48000;
+	freq_ratio = (float)freq / real_freq;
+
+	dbg_printf("Initializing frequency: %d (resampling ratio %f)\r\n",
+	        real_freq, freq_ratio);
 }
 
+unsigned int length = 0;
 EXPORT void CALL
 AiLenChanged( void )
 {
-	
+	short* stream = (short*)(AudioInfo.RDRAM +
+		         (*AudioInfo.AI_DRAM_ADDR_REG & 0xFFFFFF));
+	length = *AudioInfo.AI_LEN_REG;
+	dbg_printf("AiLenChanged. stream: %04X, length %08X\r\n",stream,length);
 }
 
 EXPORT DWORD CALL
 AiReadLength( void )
 {
-	// I don't know if this is the data they're trying to get
-	return 0;
+	dbg_printf("AiReadLength. length %08X\r\n",length);
+	length -= ((length>>2)-0x100);
+	if(length<0) length = 0;
+	return length;
 }
 
 EXPORT void CALL

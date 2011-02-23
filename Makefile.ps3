@@ -27,7 +27,7 @@ INCLUDES	:=
 
 CFLAGS		= -g -O2 -Wall -mcpu=cell $(MACHDEP) $(INCLUDE) \
 			-fno-exceptions -Wno-unused-parameter -pipe -DUSE_EXPANSION -D__BIG_ENDIAN__ \
-			-DWII -DPPC -D__PPC__ -DBIG_ENDIAN -DHW_RVL
+			-DWII -DPPC -D__PPC__ -D_BIG_ENDIAN -DHW_RVL
 	  
 CXXFLAGS	=	$(CFLAGS)
 
