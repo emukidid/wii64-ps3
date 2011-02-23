@@ -285,8 +285,7 @@ void VI::updateScreen()
 			px = scale_x*i;
 			py = scale_y*j;
 			u16 color16 = im16[((int)py*(*gfxInfo.VI_WIDTH_REG)+(int)px)];
-			u32 color = ((color16 & 0xF800)<<8) | ((color16 & 0x07C0)>>3) | ((color16 & 0x003E)<<2); //XRGB
-			//color = (j%256 << 8) ;
+			u32 color = ((color16 & 0xF800)<<8) | ((color16 & 0x07C0)<<5) | ((color16 & 0x003E)<<2); //XRGB
 			buffer[j*res.width + i] = color; 
 		}
 	}
