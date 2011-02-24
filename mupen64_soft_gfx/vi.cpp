@@ -278,15 +278,21 @@ void VI::updateScreen()
 
    //N64 Framebuffer is in RGB5A1 format. Write it directly to the current RSX framebuffer.
 	u32* buffer = color_buffer[curr_fb];
+	int x_offset = (res.width - 640)/2;
+	int y_offset = (res.height - 480)/2;
+	if (x_offset < 0) x_offset = 0;
+	if (y_offset < 0) y_offset = 0;
 	for (int j=0; j<480; j++)
 	{
+		if (j+y_offset > res.height) continue;
 		for (int i=0; i<640; i++)
 		{
+			if (i+x_offset > res.width) continue;
 			px = scale_x*i;
 			py = scale_y*j;
 			u16 color16 = im16[((int)py*(*gfxInfo.VI_WIDTH_REG)+(int)px)];
 			u32 color = ((color16 & 0xF800)<<8) | ((color16 & 0x07C0)<<5) | ((color16 & 0x003E)<<2); //XRGB
-			buffer[j*res.width + i] = color; 
+			buffer[(j+y_offset)*res.width + i + x_offset] = color; 
 		}
 	}
 	flip();
