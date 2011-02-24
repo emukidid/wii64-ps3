@@ -8,8 +8,9 @@
 #include "rom.h"
 #include "timers.h"
 #include "../r4300/r4300.h"
+#include <ppu-lv2.h>
 
-#define TB_BUS_CLOCK				1600000000u					//1.6ghz
+#define TB_BUS_CLOCK				(lv2syscall0(147))					//1.6ghz
 #define TB_TIMER_CLOCK				(TB_BUS_CLOCK/4000)			//4th of the bus frequency
 
 u32 _DEFUN(gettick,(),

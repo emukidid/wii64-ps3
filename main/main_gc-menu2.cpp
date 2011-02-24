@@ -59,6 +59,7 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <net/socket.h>
+#include <sysutil/sysutil.h>
 
 #include <assert.h>
 #include <io/pad.h>
@@ -70,6 +71,27 @@ int s;
 struct sockaddr_in server;
 #define TESTIP				"192.168.1.100"
 #define TESTPORT			18194
+
+
+void program_exit_callback()
+{
+	gcmSetWaitFlip(context);
+	rsxFinish(context,1);
+}
+
+void sysutil_exit_callback(u64 status,u64 param,void *usrdata)
+{
+	switch(status) {
+		case SYSUTIL_EXIT_GAME:
+			r4300.stop = 1;
+			break;
+		case SYSUTIL_DRAW_BEGIN:
+		case SYSUTIL_DRAW_END:
+			break;
+		default:
+			break;
+	}
+}
 
 void udp_setup()
 {
@@ -151,6 +173,8 @@ Initialise();
 	init_screen(host_addr,HOST_SIZE);
 	ioPadInit(7);
 	setRenderTarget(curr_fb);
+	atexit(program_exit_callback);
+	sysUtilRegisterCallback(0,sysutil_exit_callback,NULL);
 
 	loadROM();
 	go();

@@ -57,7 +57,6 @@ int rom_read(){
 	rom = &rom_z64[0];
    if(!ROM_HEADER) ROM_HEADER = malloc(sizeof(rom_header));
    memcpy(&ROM_HEADER[0], &rom[0], sizeof(rom_header));
-	dbg_printf("memcpy'd\r\n");
 
    // Swap country code back since I know the emulator relies on this being little endian.
   char temp = ((char*)&ROM_HEADER->Country_code)[0];
