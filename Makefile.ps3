@@ -17,7 +17,7 @@ include $(PSL1GHT)/host/ppu_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	gc_audio gc_input gc_memory rsp_hle mupen64_soft_gfx r4300 main
+SOURCES		:=	gc_audio gc_input gc_memory rsp_hle mupen64_soft_gfx r4300 main fileBrowser
 DATA		:=	data
 INCLUDES	:=
 
