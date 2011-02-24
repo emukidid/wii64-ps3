@@ -37,8 +37,8 @@
 #include "../gc_memory/memory.h"
 #include <ppu-types.h>
 
-extern u8 supermario64u_z64[];
-extern int supermario64u_z64_size;
+extern u8 rom_z64[];
+extern int rom_z64_size;
 
 unsigned char *rom;
 int rom_length;
@@ -52,9 +52,9 @@ int rom_read(){
 
    char buffer[1024];
    int i;
-   rom_length = supermario64u_z64_size;
+   rom_length = rom_z64_size;
 
-	rom = &supermario64u_z64[0];
+	rom = &rom_z64[0];
    if(!ROM_HEADER) ROM_HEADER = malloc(sizeof(rom_header));
    memcpy(&ROM_HEADER[0], &rom[0], sizeof(rom_header));
 	dbg_printf("memcpy'd\r\n");
