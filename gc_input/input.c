@@ -35,6 +35,16 @@
 static CONTROL_INFO control_info;
 static BOOL lastData[4];
 
+virtualControllers_t virtualControllers[4];
+
+controller_t* controller_ts[num_controller_t] =
+	{ &controller_PS3,
+	 };
+
+// Use to invoke func on the mapped controller with args
+#define DO_CONTROL(Control,func,args...) \
+	virtualControllers[Control].control->func( \
+		virtualControllers[Control].number, ## args)
 unsigned char mempack_crc(unsigned char *data);
 
 static BYTE writePak(int Control, BYTE* Command){
@@ -43,7 +53,7 @@ static BYTE writePak(int Control, BYTE* Command){
 	unsigned int dwAddress = (Command[0] << 8) + (Command[1] & 0xE0);
 
 	if( dwAddress == PAK_IO_RUMBLE ){
-//		DO_CONTROL(Control, rumble, *data);
+		DO_CONTROL(Control, rumble, *data);
 	} else if( dwAddress >= 0x8000 && dwAddress < 0x9000 ){
 		lastData[Control] = (*data) ? TRUE : FALSE;
 	}
@@ -166,7 +176,8 @@ EXPORT void CALL GetDllInfo ( PLUGIN_INFO * PluginInfo )
 extern int stop;
 EXPORT void CALL GetKeys(int Control, BUTTONS * Keys )
 {
-	memset(Keys, 0, sizeof(BUTTONS));
+	if(DO_CONTROL(Control, GetKeys, Keys, virtualControllers[Control].config))
+		stop_it();
 }
 
 /******************************************************************
@@ -182,7 +193,9 @@ EXPORT void CALL InitiateControllers (CONTROL_INFO ControlInfo)
 {
 	control_info = ControlInfo;
 
-	
+	init_controller_ts();
+
+	auto_assign_controllers();
 }
 
 /******************************************************************
@@ -281,13 +294,83 @@ EXPORT void CALL WM_KeyUp( WPARAM wParam, LPARAM lParam )
 {
 }
 void pauseInput(void){
-	//int i;
-	//for(i=0; i<4; ++i)
-		//if(virtualControllers[i].inUse) DO_CONTROL(i, pause);
+	int i;
+	for(i=0; i<4; ++i)
+		if(virtualControllers[i].inUse) DO_CONTROL(i, pause);
 }
 
 void resumeInput(void){
-	//int i;
-	//for(i=0; i<4; ++i)
-	//	if(virtualControllers[i].inUse) DO_CONTROL(i, resume);
+	int i;
+	for(i=0; i<4; ++i)
+		if(virtualControllers[i].inUse) DO_CONTROL(i, resume);
+}
+void init_controller_ts(void){
+	int i, j;
+	for(i=0; i<num_controller_t; ++i){
+		controller_ts[i]->refreshAvailable();
+
+		for(j=0; j<4; ++j){
+			memcpy(&controller_ts[i]->config[j],
+			       &controller_ts[i]->config_default,
+			       sizeof(controller_config_t));
+			memcpy(&controller_ts[i]->config_slot[j],
+			       &controller_ts[i]->config_default,
+			       sizeof(controller_config_t));
+		}
+	}
+}
+
+void assign_controller(int wv, controller_t* type, int wp){
+	virtualControllers[wv].control = type;
+	virtualControllers[wv].inUse   = 1;
+	virtualControllers[wv].number  = wp;
+	virtualControllers[wv].config  = &type->config[wv];
+
+	type->assign(wp,wv);
+
+	control_info.Controls[wv].Present = 1;
+}
+
+void unassign_controller(int wv){
+	virtualControllers[wv].control = NULL;
+	virtualControllers[wv].inUse   = 0;
+	virtualControllers[wv].number  = -1;
+
+	control_info.Controls[wv].Present = 0;
+	control_info.Controls[wv].Plugin  = PLUGIN_NONE;
+}
+
+void auto_assign_controllers(void){
+	int i,t,w;
+	int num_assigned[num_controller_t];
+
+	memset(num_assigned, 0, sizeof(num_assigned));
+
+	// Map controllers in the priority given
+	// Outer loop: virtual controllers
+	for(i=0; i<4; ++i){
+		// Middle loop: controller type
+		for(t=0; t<num_controller_t; ++t){
+			controller_t* type = controller_ts[t];
+			type->refreshAvailable();
+
+			// Inner loop: which controller
+			for(w=num_assigned[t]; w<4 && !type->available[w]; ++w, ++num_assigned[t]);
+			// If we've exhausted this type, move on
+			if(w == 4) continue;
+
+			assign_controller(i, type, w);
+
+			// Don't assign the next type over this one or the same controller
+			++num_assigned[t];
+			break;
+		}
+		if(t == num_controller_t)
+			break;
+	}
+
+	// 'Initialize' the unmapped virtual controllers
+	for(; i<4; ++i){
+		unassign_controller(i);
+	}
 }
