@@ -58,11 +58,10 @@ int fileBrowser_ps3_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 	struct stat fstat;
 	
 	// Set everything up to read
-	char filename[MAXPATHLEN];
 	int num_entries = 2, i = 0;
 	*dir = malloc( num_entries * sizeof(fileBrowser_file) );
 	// Read each entry of the directory
-	while( dirent = readdir(dp) != 0 ){
+	while( (dirent = readdir(dp)) != 0 ){
 		// Make sure we have room for this one
 		if(i == num_entries){
 			++num_entries;
