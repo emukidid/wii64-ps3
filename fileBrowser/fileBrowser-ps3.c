@@ -27,6 +27,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
+#include <unistd.h> 
+#include <fcntl.h> 
+#include <sys/stat.h>
 #include "fileBrowser.h"
 
 fileBrowser_file topLevel_ps3_Default =
@@ -48,8 +52,8 @@ fileBrowser_file saveDir_ps3_Default =
 		
 int fileBrowser_ps3_readDir(fileBrowser_file* file, fileBrowser_file** dir){
   
-	/*
-  DIR_ITER* dp = diropen( file->name );
+  	struct dirent *dirent;
+	DIR* dp = opendir( file->name );
 	if(!dp) return FILE_BROWSER_ERROR;
 	struct stat fstat;
 	
@@ -58,13 +62,14 @@ int fileBrowser_ps3_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 	int num_entries = 2, i = 0;
 	*dir = malloc( num_entries * sizeof(fileBrowser_file) );
 	// Read each entry of the directory
-	while( dirnext(dp, filename, &fstat) == 0 ){
+	while( dirent = readdir(dp) != 0 ){
 		// Make sure we have room for this one
 		if(i == num_entries){
 			++num_entries;
 			*dir = realloc( *dir, num_entries * sizeof(fileBrowser_file) ); 
 		}
-		sprintf((*dir)[i].name, "%s/%s", file->name, filename);
+		sprintf((*dir)[i].name, "%s/%s", file->name, dirent->d_name);
+		stat((*dir)[i].name, &fstat);
 		(*dir)[i].offset = 0;
 		(*dir)[i].size   = fstat.st_size;
 		(*dir)[i].attr   = (fstat.st_mode & S_IFDIR) ?
@@ -72,10 +77,9 @@ int fileBrowser_ps3_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 		++i;
 	}
 	
-	dirclose(dp);
+	closedir(dp);
 
-	return num_entries;*/
-	return 1;
+	return num_entries;
 }
 
 int fileBrowser_ps3_seekFile(fileBrowser_file* file, unsigned int where, unsigned int type){
