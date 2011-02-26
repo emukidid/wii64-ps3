@@ -41,15 +41,23 @@
 #include <sysutil/video.h>
 #include "../main/rsxutil.h"
 
+#include <vectormath/cpp/vectormath_aos.h>
+using namespace Vectormath::Aos;
+
+#include "texture_shader_vpo.h"
+#include "texture_shader_fpo.h"
+
 
 VI::VI(GFX_INFO info) : gfxInfo(info), bpp(0)
 {
-	FBtex = (u16*) memalign(32,640*480*2);
+//	FBtex = (u16*) memalign(32,640*480*2);
+	FBtex = (u16*)rsxMemalign(128,(640*480*2));
 }
 
 VI::~VI()
 {
-	free(FBtex);
+//	free(FBtex);
+	rsxFree(FBtex);
 }
 
 void VI::statusChanged()
@@ -276,6 +284,186 @@ void VI::updateScreen()
 		}
 	}*/
 
+
+	//init shader:
+	u32 fpsize = 0;
+	u32 fp_offset;
+	u32 *fp_buffer = NULL;
+
+	s32 projMatrix_id = -1;
+	s32 modelViewMatrix_id = -1;
+	s32 vertexPosition_id = -1;
+	s32 vertexTexcoord_id = -1;
+	s32 textureUnit_id = -1;
+
+	void *vp_ucode = NULL;
+	rsxVertexProgram *vpo = (rsxVertexProgram*)texture_shader_vpo;
+
+	void *fp_ucode = NULL;
+	rsxFragmentProgram *fpo = (rsxFragmentProgram*)texture_shader_fpo;
+
+	vp_ucode = rsxVertexProgramGetUCode(vpo);
+	projMatrix_id = rsxVertexProgramGetConst(vpo,"projMatrix");
+	modelViewMatrix_id = rsxVertexProgramGetConst(vpo,"modelViewMatrix");
+	vertexPosition_id = rsxVertexProgramGetAttrib(vpo,"vertexPosition");
+	vertexTexcoord_id = rsxVertexProgramGetAttrib(vpo,"vertexTexcoord");
+
+	fp_ucode = rsxFragmentProgramGetUCode(fpo,&fpsize);
+	fp_buffer = (u32*)rsxMemalign(64,fpsize);
+	memcpy(fp_buffer,fp_ucode,fpsize);
+	rsxAddressToOffset(fp_buffer,&fp_offset);
+
+	textureUnit_id = rsxFragmentProgramGetAttrib(fpo,"texture");
+
+	for (int j=0; j<480; j++)
+	{
+		for (int i=0; i<640; i++)
+		{
+			if (j < miny || j > maxy)
+				FBtex[ind++] = 0;
+			else
+			{
+				px = scale_x*i;
+				py = scale_y*j;
+				if (i < minx || i > maxx)
+					FBtex[ind++] = 0;
+				else
+					FBtex[ind++] = 0x8000 | (im16[((int)py*(*gfxInfo.VI_WIDTH_REG)+(int)px)]>>1); //convert R5G5B5A1 to A1R5G5B5
+			}
+		}
+	}
+
+	//setup texture
+	u32 width = 640;
+	u32 height = 480;
+	u32 pitch = (width*2);
+	gcmTexture texture;
+	u32 texture_offset;
+	rsxAddressToOffset(FBtex,&texture_offset);
+
+	rsxInvalidateTextureCache(context,GCM_INVALIDATE_TEXTURE);
+
+	texture.format		= (GCM_TEXTURE_FORMAT_A1R5G5B5 | GCM_TEXTURE_FORMAT_LIN); //CELL_GCM_TEXTURE_R5G5B5A1=(0x97)
+	texture.mipmap		= 1;
+	texture.dimension	= GCM_TEXTURE_DIMS_2D;
+	texture.cubemap		= GCM_FALSE;
+	texture.remap		= ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
+						   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
+						   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
+						   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
+						   (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
+						   (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
+						   (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
+						   (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+	texture.width		= width;
+	texture.height		= height;
+	texture.depth		= 1;
+	texture.location	= GCM_LOCATION_RSX;
+	texture.pitch		= pitch;
+	texture.offset		= texture_offset;
+	rsxLoadTexture(context,textureUnit_id,&texture);
+	rsxTextureControl(context,textureUnit_id,GCM_TRUE,0<<8,12<<8,GCM_TEXTURE_MAX_ANISO_1);
+	rsxTextureFilter(context,textureUnit_id,GCM_TEXTURE_LINEAR,GCM_TEXTURE_LINEAR,GCM_TEXTURE_CONVOLUTION_QUINCUNX);
+	rsxTextureWrapMode(context,textureUnit_id,GCM_TEXTURE_CLAMP_TO_EDGE,GCM_TEXTURE_CLAMP_TO_EDGE,GCM_TEXTURE_CLAMP_TO_EDGE,0,GCM_TEXTURE_ZFUNC_LESS,0);
+
+	//setup draw environment:
+	rsxSetColorMask(context,GCM_COLOR_MASK_B |
+							GCM_COLOR_MASK_G |
+							GCM_COLOR_MASK_R |
+							GCM_COLOR_MASK_A);
+
+	rsxSetColorMaskMRT(context,0);
+
+	u16 x,y,w,h;
+	f32 min, max;
+	f32 scale[4],offset[4];
+
+	x = 0;
+	y = 0;
+	w = display_width;
+	h = display_height;
+	min = 0.0f;
+	max = 1.0f;
+	scale[0] = w*0.5f;
+	scale[1] = h*-0.5f;
+	scale[2] = (max - min)*0.5f;
+	scale[3] = 0.0f;
+	offset[0] = x + w*0.5f;
+	offset[1] = y + h*0.5f;
+	offset[2] = (max + min)*0.5f;
+	offset[3] = 0.0f;
+
+	rsxSetViewport(context,x, y, w, h, min, max, scale, offset);
+	rsxSetScissor(context,x,y,w,h);
+
+	rsxSetDepthTestEnable(context,GCM_TRUE);
+	rsxSetDepthFunc(context,GCM_LESS);
+	rsxSetShadeModel(context,GCM_SHADE_MODEL_SMOOTH);
+	rsxSetDepthWriteEnable(context,1);
+	rsxSetFrontFace(context,GCM_FRONTFACE_CCW);
+
+	//inline const Matrix4 Matrix4::orthographic( float left, float right, float bottom, float top, float zNear, float zFar )
+	Matrix4 P,viewMatrix,modelMatrix,modelViewMatrix;
+	Point3 eye_pos = Point3(0.0f,0.0f,20.0f);
+	Point3 eye_dir = Point3(0.0f,0.0f,0.0f);
+	Vector3 up_vec = Vector3(0.0f,1.0f,0.0f);
+
+	P = transpose(Matrix4::orthographic(0.0f, 640.0f, 0.0f, 480.0f, 0.0f, 1.0f ));
+	viewMatrix = Matrix4::lookAt(eye_pos,eye_dir,up_vec);
+	modelMatrix = Matrix4::identity();
+	modelViewMatrix = viewMatrix*modelMatrix;
+
+	u32 color = 0;
+	rsxSetClearColor(context,color);
+	rsxSetClearDepthValue(context,0xffff);
+	rsxClearSurface(context,GCM_CLEAR_R |
+							GCM_CLEAR_G |
+							GCM_CLEAR_B |
+							GCM_CLEAR_A |
+							GCM_CLEAR_S |
+							GCM_CLEAR_Z);
+
+	rsxZControl(context,0,1,1);
+
+	for(int i=0;i<8;i++)
+		rsxSetViewportClip(context,i,display_width,display_height);
+
+	rsxLoadVertexProgram(context,vpo,vp_ucode);
+	rsxSetVertexProgramParameter(context,vpo,projMatrix_id,(float*)&P);
+	rsxSetVertexProgramParameter(context,vpo,modelViewMatrix_id,(float*)&modelViewMatrix);
+
+	rsxLoadFragmentProgramLocation(context,fpo,fp_offset,GCM_LOCATION_RSX);
+
+	rsxSetUserClipPlaneControl(context,GCM_USER_CLIP_PLANE_DISABLE,
+									   GCM_USER_CLIP_PLANE_DISABLE,
+									   GCM_USER_CLIP_PLANE_DISABLE,
+									   GCM_USER_CLIP_PLANE_DISABLE,
+									   GCM_USER_CLIP_PLANE_DISABLE,
+									   GCM_USER_CLIP_PLANE_DISABLE);
+
+	//void rsxDrawVertexBegin(gcmContextData *context,u32 type);
+	rsxDrawVertexBegin(context,GCM_TYPE_QUADS);
+
+		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 0.0f, 0.0f);
+		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 1.0f);
+
+		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 0.0f, 0.0f);
+		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 0.0f);
+
+		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 480.0f, 0.0f);
+		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f, 0.0f);
+
+		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 480.0f, 0.0f);
+		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f, 1.0f);
+
+	rsxDrawVertexEnd(context);
+
+	flip();
+
+	//free RSX buffers
+	if (fp_buffer) rsxFree(fp_buffer);
+
+/*
    //N64 Framebuffer is in RGB5A1 format. Write it directly to the current RSX framebuffer.
 	u32* buffer = color_buffer[curr_fb];
 	int x_offset = (res.width - 640)/2;
@@ -296,7 +484,7 @@ void VI::updateScreen()
 		}
 	}
 	flip();
-
+*/
 /*
 	GX_SetCopyClear ((GXColor){0,0,0,255}, 0xFFFFFF);
 	GX_CopyDisp (vi->getScreenPointer(), GX_TRUE);	//clear the EFB before executing new Dlist
