@@ -33,6 +33,7 @@
 #include "memory.h"
 #include "../r4300/r4300.h"
 #include "../main/guifuncs.h"
+#include "../fileBrowser/fileBrowser.h"
 
 
 #include "Saves.h"
@@ -56,13 +57,40 @@ static u32 erase_offset, write_pointer;
 
 BOOL flashramWritten = FALSE;
 
-int loadFlashram(){
-	int i;
-	for (i=0; i<0x20000; i++) flashram[i] = 0xff;
-	return 1;
+int loadFlashram(fileBrowser_file* savepath){
+	int i, result = 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.fla",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_readFile(&saveFile, &i, 4) == 4) {  //file exists
+		saveFile.offset = 0;
+		if(saveFile_readFile(&saveFile, flashram, 0x20000)!=0x20000) {  //error reading file
+  		for (i=0; i<0x20000; i++) flashram[i] = 0xff;
+  		flashramWritten = FALSE;
+  		return -1;
+		}
+		result = 1;
+		flashramWritten = 1;
+		return result;  //file read ok
+	} else for (i=0; i<0x20000; i++) flashram[i] = 0xff;  //file doesn't exist
+
+	flashramWritten = FALSE;
+
+	return result;    //no file
 }
 
-int saveFlashram(){
+int saveFlashram(fileBrowser_file* savepath){
+  if(!flashramWritten) return 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.fla",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_writeFile(&saveFile, flashram, 0x20000)!=0x20000)
+	  return -1;
+
 	return 1;
 }
 

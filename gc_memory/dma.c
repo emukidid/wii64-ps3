@@ -37,6 +37,7 @@
 #include "../r4300/r4300.h"
 #include "../r4300/interupt.h"
 #include "../r4300/macros.h"
+#include "../fileBrowser/fileBrowser.h"
 #include "../r4300/Invalid_Code.h"
 #include "pif.h"
 #include "flashram.h"
@@ -52,14 +53,42 @@ static unsigned char sram[0x8000] __attribute__((aligned(32)));
 
 BOOL sramWritten = FALSE;
 
-int loadSram(){
-	int i;
-	for (i=0; i<0x8000; i++) sram[i] = 0;
-	return 1;
+int loadSram(fileBrowser_file* savepath){
+	int i, result = 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.sra",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_readFile(&saveFile, &i, 4) == 4){ //file exists
+		saveFile.offset = 0;
+		if(saveFile_readFile(&saveFile, sram, 0x8000)!=0x8000) {  //error reading file
+  		for (i=0; i<0x8000; i++) sram[i] = 0;
+  		sramWritten = FALSE;
+  		return -1;
+		}
+  	result = 1;
+  	sramWritten = 1;
+		return result;  //file read ok
+	} else for (i=0; i<0x8000; i++) sram[i] = 0;  //file doesn't exist
+
+	sramWritten = FALSE;
+
+	return result;    //no file
+
 }
 
-int saveSram(){
- 	return 1;
+int saveSram(fileBrowser_file* savepath){
+  if(!sramWritten) return 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.sra",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_writeFile(&saveFile, sram, 0x8000)!=0x8000)
+	  return -1;
+
+	return 1;
 }
 
 void dma_pi_read()

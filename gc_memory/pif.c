@@ -41,6 +41,7 @@
 #include "../main/plugin.h"
 #include "../main/guifuncs.h"
 #include "../main/rom.h"
+#include "../fileBrowser/fileBrowser.h"
 #include "Saves.h"
 
 static unsigned char eeprom[0x800] __attribute__((aligned(32)));
@@ -52,14 +53,44 @@ BOOL mempakWritten = FALSE;
 
 void check_input_sync(unsigned char *value);
 
-int loadEeprom(){
-	int i;
-	for (i=0; i<0x800; i++) eeprom[i] = 0;
-	return 1;
+int loadEeprom(fileBrowser_file* savepath){
+	int i, result = 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.eep",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_readFile(&saveFile, &i, 4) == 4) {  //file exists
+		saveFile.offset = 0;
+		if(saveFile_readFile(&saveFile, eeprom, 0x800)!=0x800) { //error reading file
+  		for (i=0; i<0x800; i++) eeprom[i] = 0;
+  		eepromWritten = FALSE;
+  		return -1;
+		}
+		result = 1;
+		eepromWritten = 1;
+		return result;  //file read ok
+	} else for (i=0; i<0x800; i++) eeprom[i] = 0; //file doesn't exist
+
+	eepromWritten = FALSE;
+
+	return result;  //no file
 }
 
-int saveEeprom(){
-  	return 1;
+extern long long gettime();
+// Note: must be called after load
+int saveEeprom(fileBrowser_file* savepath){
+  if(!eepromWritten) return 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.eep",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_writeFile(&saveFile, eeprom, 0x800)!=0x800)
+	  return -1;
+
+	return 1;
+
 }
 
 void init_eeprom() {
@@ -171,12 +202,42 @@ unsigned char mempack_crc(unsigned char *data)
    return CRC;
 }
 
-int loadMempak(){
-	return 1;
+int loadMempak(fileBrowser_file* savepath){
+	int i, result = 0;
+  fileBrowser_file saveFile;
+
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.mpk",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_readFile(&saveFile, &i, 4) == 4) {  //file exists
+		saveFile.offset = 0;
+		if(saveFile_readFile(&saveFile, mempack, 0x8000 * 4)!=(0x8000*4)) { //error reading file
+  		format_mempacks();
+	    mempakWritten = FALSE;
+	    return -1;
+    }
+		result = 1;
+		mempakWritten = 1;
+		return result;  //file read ok
+	} else format_mempacks(); //file doesn't exist
+
+	mempakWritten = FALSE;
+
+	return result;    //no file
 }
 
-int saveMempak(){
-  	return 1;
+int saveMempak(fileBrowser_file* savepath){
+  if(!mempakWritten) return 0;
+	fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	sprintf((char*)saveFile.name,"%s/%s%s.mpk",savepath->name,ROM_SETTINGS.goodname,saveregionstr());
+
+	if(saveFile_writeFile(&saveFile, mempack, 0x8000 * 4)!=(0x8000*4))
+	  return -1;
+
+	return 1;
 }
 
 void internal_ReadController(int Control, BYTE *Command)
