@@ -47,6 +47,7 @@ extern "C" {
 #include "../gc_memory/Saves.h"
 #include "../main/savestates.h"
 #include "wii64config.h"
+#include "../fileBrowser/fileBrowser.h"
 }
 
 #include <stdio.h>
@@ -120,7 +121,6 @@ void dbg_printf(const char *fmt,...)
 
 static void Initialise (void){
 	udp_setup();
-	int i = 0;
 	dbg_printf("Initialized wii64 on PS3!!!!!!!!!!\r\n");
 }
 
@@ -151,7 +151,6 @@ extern "C" void gfx_set_fb(unsigned int* fb1, unsigned int* fb2);
 void gfx_set_window(int x, int y, int width, int height);
 // -- End plugin data --
 
-static u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int GX_xfb_offset = 0;
 
 // Dummy functions
@@ -181,9 +180,15 @@ Initialise();
 	return 0;
 }
 
+fileBrowser_file romfile =
+	{ "dev_usb/wii64/roms/rom.z64", // file name
+	  0, // offset
+	  0, // size
+	  0
+	 };
+
 int loadROM(){
-  int ret = 0;
-  rom_read();
+  rom_read(&romfile);
   dbg_printf("format_mempacks()\r\n");
   format_mempacks();
   dbg_printf("reset_flashram()\r\n");

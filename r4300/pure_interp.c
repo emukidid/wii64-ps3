@@ -33,6 +33,7 @@
 #include "r4300.h"
 #include "exception.h"
 #include "../gc_memory/memory.h"
+#include "../main/ROM-Cache.h"
 #include "macros.h"
 #include "interupt.h"
 #include <ppu-types.h>
@@ -3250,7 +3251,7 @@ if ((r4300.pc >= 0x80000000) && (r4300.pc < 0xc0000000))
 	  }
 	else if ((r4300.pc > 0xb0000000))
 	  {
-	     op = ((u32*)rom)[(r4300.pc & 0xFFFFFFF)/4];
+	     ROMCache_read(&op, (r4300.pc & 0xFFFFFFF), 4);
 	     prefetch_opcode(op);
 	  }
 	else

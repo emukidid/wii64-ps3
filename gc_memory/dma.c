@@ -39,6 +39,7 @@
 #include "../r4300/macros.h"
 #include "../fileBrowser/fileBrowser.h"
 #include "../r4300/Invalid_Code.h"
+#include "../main/ROM-Cache.h"
 #include "pif.h"
 #include "flashram.h"
 #include "Saves.h"
@@ -184,11 +185,8 @@ void dma_pi_write()
      	       ((pi_register.pi_cart_addr_reg-0x10000000)&0x3FFFFFF)^S8,
      	       ((unsigned int)(pi_register.pi_dram_addr_reg)^S8),
      	       longueur);*/
-	for (i=0; i<longueur; i++)
-	  {
-	     ((unsigned char*)rdram)[(pi_register.pi_dram_addr_reg+i)^S8]=
-	       rom[(((pi_register.pi_cart_addr_reg-0x10000000)&0x3FFFFFF)+i)^S8];
-	  }
+	ROMCache_read((u32*)((char*)rdram + ((u32)(pi_register.pi_dram_addr_reg)^S8)),
+	              (((pi_register.pi_cart_addr_reg-0x10000000)&0x3FFFFFF))^S8, longueur);
      
 
    if ((debug_count+Count) < 0x100000)

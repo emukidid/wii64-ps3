@@ -30,8 +30,10 @@
 #ifndef ROM_H
 #define ROM_H
 
+#include "../fileBrowser/fileBrowser.h"
 #include <ppu-types.h>
-int rom_read();
+
+int rom_read(fileBrowser_file* file);
 int fill_header();
 void calculateMD5(unsigned char digest[16]);
 extern unsigned char *rom;

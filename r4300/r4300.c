@@ -30,6 +30,7 @@
 #include "../config.h"
 #include "r4300.h"
 #include "../gc_memory/memory.h"
+#include "../main/ROM-Cache.h"
 #include "exception.h"
 #include "interupt.h"
 #include "macros.h"
@@ -210,7 +211,7 @@ void cpu_init(void){
 
    j=0;
    debug_count = 0;
-   memcpy((char*)SP_DMEM+0x40, &rom[0x40], 0xFBC);
+   ROMCache_read((char*)SP_DMEM+0x40, 0x40, 0xFBC);
    r4300.delay_slot=0;
    r4300.skip_jump=0;
    r4300.stop = 0;
