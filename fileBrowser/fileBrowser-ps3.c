@@ -49,11 +49,12 @@ fileBrowser_file saveDir_ps3_Default =
 	 
  
 
-		
+extern void dbg_printf(const char *fmt,...);
 int fileBrowser_ps3_readDir(fileBrowser_file* file, fileBrowser_file** dir){
   
   	struct dirent *dirent;
 	DIR* dp = opendir( file->name );
+	dbg_printf("Directory opened: %s\r\n",!dp ? "False":"True");
 	if(!dp) return FILE_BROWSER_ERROR;
 	struct stat fstat;
 	
@@ -68,6 +69,7 @@ int fileBrowser_ps3_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 			*dir = realloc( *dir, num_entries * sizeof(fileBrowser_file) ); 
 		}
 		sprintf((*dir)[i].name, "%s/%s", file->name, dirent->d_name);
+		dbg_printf("Found: %s\r\n",(*dir)[i].name);
 		stat((*dir)[i].name, &fstat);
 		(*dir)[i].offset = 0;
 		(*dir)[i].size   = fstat.st_size;

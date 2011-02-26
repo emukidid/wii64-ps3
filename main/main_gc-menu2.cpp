@@ -48,6 +48,7 @@ extern "C" {
 #include "../main/savestates.h"
 #include "wii64config.h"
 #include "../fileBrowser/fileBrowser.h"
+#include "../fileBrowser/fileBrowser-ps3.h"
 }
 
 #include <stdio.h>
@@ -181,13 +182,21 @@ Initialise();
 }
 
 fileBrowser_file romfile =
-	{ "dev_usb/wii64/roms/rom.z64", // file name
+	{ "/dev_usb/wii64/roms/rom.z64", // file name
 	  0, // offset
-	  0, // size
+	  2*1024*1024, // size
 	  0
 	 };
 
 int loadROM(){
+	// Change all the romFile pointers
+	romFile_topLevel = &topLevel_ps3_Default;
+	romFile_readDir  = fileBrowser_ps3_readDir;
+	romFile_readFile = fileBrowser_ps3ROM_readFile;
+	romFile_seekFile = fileBrowser_ps3_seekFile;
+	romFile_init     = fileBrowser_ps3_init;
+	romFile_deinit   = fileBrowser_ps3ROM_deinit;
+	
   rom_read(&romfile);
   dbg_printf("format_mempacks()\r\n");
   format_mempacks();

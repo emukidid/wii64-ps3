@@ -34,7 +34,7 @@
 //#include "../gui/DEBUG.h"
 //#include "../gui/GUI.h"
 #include "ROM-Cache.h"
-
+extern void dbg_printf(const char *fmt,...);
 #define MAX_ROM_SIZE 64*1024*1024
 
 //#ifdef MENU_V2
@@ -72,7 +72,14 @@ fileBrowser_file *ROMFile;
 
 void ROMCache_init(fileBrowser_file* f){
 	if(!rom) {
+		dbg_printf("Allocating 0x%08X bytes for rom\r\n",MAX_ROM_SIZE);
 		rom = malloc(MAX_ROM_SIZE);
+		if(rom) {
+			dbg_printf("Successfully allocated 0x%08X bytes for rom\r\n",MAX_ROM_SIZE);
+		}
+		else {
+			dbg_printf("Failed to allocate 0x%08X bytes for rom\r\n",MAX_ROM_SIZE);
+		}
 	}
 	readBefore = 0; //de-init byteswapping
 	ROMFile = f;
@@ -92,14 +99,18 @@ void ROMCache_read(u8* dest, u32 offset, u32 length){
 }
 
 int ROMCache_load(fileBrowser_file* f){
-	//PRINT("Loading ROM %s into RAM fully");
+	dbg_printf("Loading ROM %s into RAM fully\r\n",f->name);
 
 	romFile_seekFile(ROMFile, 0, FILE_BROWSER_SEEK_SET);
 	
 	u32 offset = 0,loads_til_update = 0;
 	int bytes_read;
 	while(offset < ROMSize){
+		dbg_printf("Reading 0x%08X bytes from offset 0x%08X to 0x%08x\r\n",
+		262144,offset,rom+offset);
 		bytes_read = romFile_readFile(ROMFile, rom + offset, 262144);
+		dbg_printf("Read 0x%08X bytes from offset 0x%08X to 0x%08x\r\n",
+		bytes_read,offset,rom+offset);
 		
 		if(bytes_read < 0){		// Read fail!
 			//SETLOADPROG( -1.0f );
