@@ -23,6 +23,25 @@
 
 #include "GuiTypes.h"
 
+//Custom Defines for PS3 buttons
+// 0: UP, 1: DOWN
+#define PS3_BTN_LEFT		(1<<15)
+#define PS3_BTN_DOWN		(1<<14)
+#define PS3_BTN_RIGHT		(1<<13)
+#define PS3_BTN_UP			(1<<12)
+#define PS3_BTN_START		(1<<11)
+#define PS3_BTN_R3			(1<<10)
+#define PS3_BTN_L3			(1<<9)
+#define PS3_BTN_SELECT		(1<<8)
+#define PS3_BTN_SQUARE		(1<<7)
+#define PS3_BTN_CROSS		(1<<6)
+#define PS3_BTN_CIRCLE		(1<<5)
+#define PS3_BTN_TRIANGLE	(1<<4)
+#define PS3_BTN_R1			(1<<3)
+#define PS3_BTN_L1			(1<<2)
+#define PS3_BTN_R2			(1<<1)
+#define PS3_BTN_L2			(1<<0)
+
 namespace menu {
 
 class Focus
@@ -64,6 +83,7 @@ private:
 	int buttonsPressed, previousButtonsPressed;
 	u32 previousButtonsWii[4];
 	u16 previousButtonsGC[4];
+	u16 previousButtonsPS3[7];
 	ComponentList focusList;
 	Component *primaryFocusOwner, *secondaryFocusOwner;
 	Frame *currentFrame;

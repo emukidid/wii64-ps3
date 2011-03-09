@@ -23,6 +23,18 @@
 
 #include "GuiTypes.h"
 
+#ifndef __GX__
+//Define missing texture formats
+#define GX_TF_I4			0x0
+#define GX_TF_I8			0x1
+#define GX_TF_RGB5A3		0x5
+#define GX_TF_RGBA8			0x6
+#define GX_TEXMAP0				0			/*!< Texture map slot 0 */
+
+//Map GX->RSX clamp modes
+#define GX_CLAMP	GCM_TEXTURE_CLAMP_TO_EDGE
+#endif //!__GX__
+
 namespace menu {
 
 class Image
@@ -34,8 +46,16 @@ public:
 	void activateImage(u8 mapid);
 
 private:
+#ifdef __GX__
 	GXTexObj obj;
 	GXTlutObj tlut_obj;
+#else //__GX__
+	gcmTexture texobj;
+	u32 rsx_texture_offset;
+	u32 *rsx_texture_buffer;
+	u8 rsxFmt;
+	u8 wraps, wrapt;
+#endif //!__GX__
 	void *img_ptr;
 	void *tlut_ptr;
 	u16 width, height;

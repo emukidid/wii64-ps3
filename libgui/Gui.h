@@ -24,7 +24,11 @@
 #include "GuiTypes.h"
 #include "Frame.h"
 #include "Logo.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 
 namespace menu {
 
@@ -49,6 +53,8 @@ private:
 	~Gui();
 	FrameList frameList;
 	char fade;
+	//Temporary
+	u16* FBtex ;
 };
 
 } //namespace menu 

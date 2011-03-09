@@ -18,12 +18,19 @@
  *
 **/
 
-#ifdef __GX__
-#ifndef GRAPHICSGX_H
-#define GRAPHICSGX_H
+#ifndef GRAPHICSRSX_H
+#define GRAPHICSRSX_H
 
 #include "GuiTypes.h"
+#ifdef __GX__
 #include <gccore.h>
+#endif //__GX__
+
+#include <vectormath/cpp/vectormath_aos.h>
+using namespace Vectormath::Aos;
+
+#include "combined_shader_vpo.h"
+#include "combined_shader_fpo.h"
 
 namespace menu {
 
@@ -64,25 +71,53 @@ public:
 	void popTransparency();
 	void setTransparency(float f);
 	float getTransparency();
+	void testPrim();
+
+	enum Shaders
+	{
+		SHADER_PASSTEX=1,
+		SHADER_PASSCOLOR,
+		SHADER_MODULATE
+	};
 
 private:
 	void applyCurrentColor();
 	float getCurrentTransparency(int index);
-	GXRModeObj *vmode;
-	GXRModeObj vmode_phys;
+//	GXRModeObj *vmode;
+//	GXRModeObj vmode_phys;
 	int which_fb;
 	bool first_frame;
-	void *xfb[2];
+//	void *xfb[2];
 	float depth, transparency;
 	float viewportWidth, viewportHeight;
 	FloatStack depthStack, transparencyStack;
 	GXColor currentColor[4], appliedColor[4];
-	Mtx currentModelViewMtx;
-	Mtx44 currentProjectionMtx;
+//	Mtx currentModelViewMtx;
+//	Mtx44 currentProjectionMtx;
 //	MatrixStack modelViewMtxStack;
+
+	u32 fpsize;
+	u32 fp_offset;
+	u32 *fp_buffer;
+
+	s32 projMatrix_id;
+	s32 modelViewMatrix_id;
+	s32 vertexPosition_id;
+	s32 vertexColor0_id;
+	s32 vertexTexcoord_id;
+	s32 textureUnit_id;
+	s32 mode_id;
+	f32 shader_mode;
+
+	void *vp_ucode;
+	rsxVertexProgram *vpo;
+	void *fp_ucode;
+	rsxFragmentProgram *fpo;
+
+	Matrix4 projMatrix, modelViewMatrix;
+
 };
 
 } //namespace menu 
 
 #endif
-#endif //__GX__

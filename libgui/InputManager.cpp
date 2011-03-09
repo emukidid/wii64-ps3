@@ -21,7 +21,7 @@
 #include "InputManager.h"
 #include "FocusManager.h"
 #include "CursorManager.h"
-#include "../gc_input/controller.h"
+//#include "../gc_input/controller.h"
 
 
 void ShutdownWii();
@@ -32,6 +32,7 @@ namespace menu {
 	
 Input::Input()
 {
+#ifdef __GX__
 	PAD_Init();
 #ifdef HW_RVL
 	CONF_Init();
@@ -43,6 +44,9 @@ Input::Input()
 	SYS_SetPowerCallback(ShutdownWii);
 
 #endif
+#else //__GX__
+	//TODO
+#endif //!__GX__
 //	VIDEO_SetPostRetraceCallback (PAD_ScanPads);
 }
 
@@ -52,6 +56,7 @@ Input::~Input()
 
 void Input::refreshInput()
 {
+#ifdef __GX__
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	PAD_Read(gcPad);
 	PAD_Clamp(gcPad);
@@ -60,6 +65,9 @@ void Input::refreshInput()
 	WPAD_ScanPads();
 	wiiPad = WPAD_Data(0);
 #endif
+#else //__GX__
+	//TODO
+#endif //!__GX__
 }
 
 #ifdef HW_RVL
@@ -69,10 +77,14 @@ WPADData* Input::getWpad()
 }
 #endif
 
+#ifdef __GX__
 PADStatus* Input::getPad()
 {
 	return &gcPad[0];
 }
+#else //__GX__
+	//TODO
+#endif //!__GX__
 
 void Input::clearInputData()
 {

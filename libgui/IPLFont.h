@@ -23,6 +23,14 @@
 
 #include "GuiTypes.h"
 
+#ifndef __GX__
+#include <vectormath/cpp/vectormath_aos.h>
+using namespace Vectormath::Aos;
+
+#include "combined_shader_vpo.h"
+#include "combined_shader_fpo.h"
+#endif //!__GX__
+
 namespace menu {
 
 class IplFont
@@ -47,26 +55,56 @@ private:
 	IplFont();
 	~IplFont();
 	void initFont();
-	void setIplConfig(unsigned char c);
 	void decodeYay0(void *src, void *dst);
+#ifdef __GX__
+	void setIplConfig(unsigned char c);
 	void convertI2toI4(void *dst, void *src, int xres, int yres);
+#else //__GX__
+	void convertI2toI8(void *dst, void *src, int xres, int yres);
+#endif //!__GX__
 
 	typedef struct {
 		u16 s[256], t[256], font_size[256], fheight;
 	} CHAR_INFO;
 
+	u16 frameWidth;
+	CHAR_INFO fontChars;
+	GXRModeObj *vmode;
+	GXColor fontColor;
+
+#ifdef __GX__
 #ifdef HW_RVL
 	unsigned char *fontFont;
 #else //GC
 	unsigned char fontFont[ 0x40000 ] __attribute__((aligned(32)));
 #endif
-
-	u16 frameWidth;
-	CHAR_INFO fontChars;
 	GXTexObj fontTexObj;
-	GXRModeObj *vmode;
-	GXColor fontColor;
+#else //__GX__
+	gcmTexture texobj;
+	u32 rsx_texture_offset;
+	u32 *rsx_texture_buffer;
 
+	//Graphics environment variables... Move?
+	u32 fpsize;
+	u32 fp_offset;
+	u32 *fp_buffer;
+
+	s32 projMatrix_id;
+	s32 modelViewMatrix_id;
+	s32 vertexPosition_id;
+	s32 vertexColor0_id;
+	s32 vertexTexcoord_id;
+	s32 textureUnit_id;
+	s32 mode_id;
+	f32 shader_mode;
+
+	void *vp_ucode;
+	rsxVertexProgram *vpo;
+	void *fp_ucode;
+	rsxFragmentProgram *fpo;
+
+	Matrix4 projMatrix, modelViewMatrix;
+#endif //!__GX__
 };
 
 } //namespace menu 

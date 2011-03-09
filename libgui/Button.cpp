@@ -20,7 +20,12 @@
 
 #include "Button.h"
 #include "GuiResources.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#include <ppu-lv2.h>
+#endif //!__GX__
 #include "IPLFont.h"
 #include "Image.h"
 #include "FocusManager.h"
@@ -131,7 +136,26 @@ void Button::setFontSize(float size)
 	fontSize = size;
 }
 
+#ifdef __GX__
 #include "ogc/lwp_watchdog.h"
+#else //__GX__
+#define TB_BUS_CLOCK				(lv2syscall0(147))					//1.6ghz
+#define TB_TIMER_CLOCK				(TB_BUS_CLOCK/4000)			//4th of the bus frequency
+
+u32 _DEFUN(gettick,(),
+	_NOARGS)
+
+{
+	u32 result;
+	__asm__ __volatile__ (
+		"mftb	%0\n"
+		: "=r" (result)
+	);
+	return result;
+}
+
+#define ticks_to_microsecs(ticks)	((((u64)(ticks)*8)/(u64)(TB_TIMER_CLOCK/125)))
+#endif //!__GX__
 
 void Button::setLabelMode(int mode)
 {

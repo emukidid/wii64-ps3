@@ -19,14 +19,18 @@
 **/
 
 #include "LoadingBar.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 #include "GuiResources.h"
 #include "resources.h"
 #include "CursorManager.h"
 #include "FocusManager.h"
 #include "IPLFont.h"
 #include <stdio.h>
-#include <debug.h>
+//#include <debug.h>
 
 namespace menu {
 

@@ -21,7 +21,11 @@
 #include "CursorManager.h"
 #include "InputManager.h"
 #include "FocusManager.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 #include "Image.h"
 #include "resources.h"
 #include "IPLFont.h"

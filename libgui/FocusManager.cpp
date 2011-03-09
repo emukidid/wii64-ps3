@@ -40,6 +40,9 @@ Focus::Focus()
 		previousButtonsWii[i] = 0;
 		previousButtonsGC[i] = 0;
 	}
+	for (int i=0; i<7; i++) {
+		previousButtonsPS3[i] = 0;
+	}
 }
 
 Focus::~Focus()
@@ -54,6 +57,26 @@ void Focus::updateFocus()
 	WPADData* wiiPad = Input::getInstance().getWpad();
 #endif
 //	PADStatus* gcPad = Input::getInstance().getPad();
+#ifndef __GX__
+	padInfo padinfo;
+	padData paddata;
+	u16 buttonsPS3[7];
+
+	ioPadGetInfo(&padinfo);
+	for(int i=0; i<7; i++){		//Check ports 0~6
+		if(padinfo.status[i])
+		{
+			ioPadGetData(i, &paddata);
+			if (paddata.len)
+				buttonsPS3[i] = ((paddata.button[2]&0xFF)<<8) | (paddata.button[3]&0xFF);
+			else
+				buttonsPS3[i] = previousButtonsPS3[i];
+			//dbg_printf("pad %d buttons %4x, Cross %d, len %d\r\n", i, buttonsPS3[i], paddata.BTN_CROSS, paddata.len);
+		}
+		else
+			buttonsPS3[i] = 0;
+	}
+#endif
 
 	if (!focusActive) return;
 
@@ -67,6 +90,7 @@ void Focus::updateFocus()
 
 	if(clearInput)
 	{
+#ifdef __GX__
 		for (int i=0; i<4; i++)
 		{
 			previousButtonsGC[i] = PAD_ButtonsHeld(i);
@@ -74,9 +98,52 @@ void Focus::updateFocus()
 			previousButtonsWii[i] = wiiPad[i].btns_h;
 #endif
 		}
+#else //__GX__
+		for (int i=0; i<7; i++)
+		{
+			previousButtonsPS3[i] = buttonsPS3[i];
+		}
+#endif //!__GX__
 		clearInput = false;
 	}
 
+#ifndef __GX__
+	for (int i=0; i<7; i++)
+	{
+		u16 currentButtonsPS3 = buttonsPS3[i];
+		if (currentButtonsPS3 ^ previousButtonsPS3[i])
+		{
+			u16 currentButtonsDownPS3 = (currentButtonsPS3 ^ previousButtonsPS3[i]) & currentButtonsPS3;
+			switch (currentButtonsDownPS3 & 0xf000) {
+			case PS3_BTN_LEFT:
+				focusDirection = DIRECTION_LEFT;
+				break;
+			case PS3_BTN_RIGHT:
+				focusDirection = DIRECTION_RIGHT;
+				break;
+			case PS3_BTN_DOWN:
+				focusDirection = DIRECTION_DOWN;
+				break;
+			case PS3_BTN_UP:
+				focusDirection = DIRECTION_UP;
+				break;
+			default:
+				focusDirection = DIRECTION_NONE;
+			}
+			if (currentButtonsDownPS3 & PS3_BTN_CROSS) buttonsDown |= ACTION_SELECT;
+			if (currentButtonsDownPS3 & PS3_BTN_CIRCLE) buttonsDown |= ACTION_BACK;
+			if (freezeAction)
+			{
+				focusDirection = DIRECTION_NONE;
+				buttonsDown = 0;
+			}
+			if (primaryFocusOwner) primaryFocusOwner = primaryFocusOwner->updateFocus(focusDirection,buttonsDown);
+			else primaryFocusOwner = currentFrame->updateFocus(focusDirection,buttonsDown);
+			previousButtonsPS3[i] = currentButtonsPS3;
+			break;
+		}
+	}
+#else //!__GX__
 	for (int i=0; i<4; i++)
 	{
 		u16 currentButtonsGC = PAD_ButtonsHeld(i);
@@ -167,6 +234,7 @@ void Focus::updateFocus()
 		}
 #endif
 	}
+#endif //__GX__
 }
 
 void Focus::addComponent(Component* component)

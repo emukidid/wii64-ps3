@@ -19,9 +19,32 @@
 **/
 
 #include "Logo.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 #include <math.h>
+#ifdef __GX__
 #include "ogc/lwp_watchdog.h"
+#else //__GX__
+#define TB_BUS_CLOCK				(lv2syscall0(147))					//1.6ghz
+#define TB_TIMER_CLOCK				(TB_BUS_CLOCK/4000)			//4th of the bus frequency
+
+u32 _DEFUN(gettick,(),
+	_NOARGS)
+
+{
+	u32 result;
+	__asm__ __volatile__ (
+		"mftb	%0\n"
+		: "=r" (result)
+	);
+	return result;
+}
+
+#define ticks_to_microsecs(ticks)	((((u64)(ticks)*8)/(u64)(TB_TIMER_CLOCK/125)))
+#endif //!__GX__
 
 namespace menu {
 
@@ -33,7 +56,7 @@ namespace menu {
 #define LOGO_N_Z2 13
 
 // 'N' logo vertex data
-s8 N_verts[] ATTRIBUTE_ALIGN (32) =
+s8 N_verts[] __attribute__ ((aligned (32))) =
 { // x y z
   -LOGO_N_X1, -LOGO_N_Y1,  LOGO_N_Z1,		// 0 (side A, XY plane, Z=LOGO_N_Z1)
   -LOGO_N_X2, -LOGO_N_Y1,  LOGO_N_Z1,		// 1		6 7   8 9
@@ -107,7 +130,7 @@ s8 N_verts[] ATTRIBUTE_ALIGN (32) =
 #define LOGO_M_Z3 30
 
 // 'M' logo vertex data
-s8 M_verts[] ATTRIBUTE_ALIGN (32) =
+s8 M_verts[] __attribute__ ((aligned (32))) =
 { // x y z
 	-LOGO_M_X3, -LOGO_M_Y3,  LOGO_M_Z3,		//  0, 0 (side A, XY plane, Z=LOGO_M_Z3)
 	-LOGO_M_X2, -LOGO_M_Y3,  LOGO_M_Z3,		//  1, 1		9 A    B C
@@ -224,7 +247,7 @@ s8 M_verts[] ATTRIBUTE_ALIGN (32) =
 #define LOGO_W_Z3L3 (LOGO_W_Z3+(LOGO_W_Y4/LOGO_W_YSCALE))
 
 // 'W' logo vertex data
-s8 W_verts[] ATTRIBUTE_ALIGN (32) =
+s8 W_verts[] __attribute__ ((aligned (32))) =
 { // x y z
 	-LOGO_W_X3L3, -LOGO_W_Y4,  LOGO_W_Z3L3,		//  0, 0 (side A, XY plane, Z=LOGO_W_Z3)
 	-LOGO_W_X2L3, -LOGO_W_Y4,  LOGO_W_Z3L3,		//  1, 1		   9 A   B C		-Y0
@@ -313,7 +336,7 @@ s8 W_verts[] ATTRIBUTE_ALIGN (32) =
 };
 
 // N64 logo color data
-u8 logo_colors[] ATTRIBUTE_ALIGN (32) =
+u8 logo_colors[] __attribute__ ((aligned (32))) =
 { // r, g, b, a
 	//'N' logo colors
 	  8, 147,  48, 255,		// 0 green
@@ -374,6 +397,7 @@ void Logo::updateTime(float deltaTime)
 
 void Logo::drawComponent(Graphics& gfx)
 {
+#ifdef __GX__
 	Mtx v, m, mv, tmp;            // view, model, modelview, and perspective matrices
 	guVector cam = { 0.0F, 0.0F, 0.0F }, 
 		up = {0.0F, 1.0F, 0.0F}, 
@@ -822,10 +846,12 @@ void Logo::drawComponent(Graphics& gfx)
 	//Reset GX state:
 	GX_SetLineWidth(6,GX_TO_ZERO);
 	gfx.drawInit();
+#endif //__GX__
 }
 
 void Logo::drawQuad(u8 v0, u8 v1, u8 v2, u8 v3, u8 c)
 {
+#ifdef __GX__
 	// draws a quad from 4 vertex idx and one color idx
 	// one 8bit position idx
 	GX_Position1x8 (v0);
@@ -837,10 +863,12 @@ void Logo::drawQuad(u8 v0, u8 v1, u8 v2, u8 v3, u8 c)
 	GX_Color1x8 (c);
 	GX_Position1x8 (v3);
 	GX_Color1x8 (c);
+#endif //__GX__
 }
 
 void Logo::drawLine(u8 v0, u8 v1, u8 c)
 {
+#ifdef __GX__
 	// draws a line from 2 vertex idx and one color idx
 	// one 8bit position idx
 	GX_Position1x8 (v0);
@@ -848,6 +876,7 @@ void Logo::drawLine(u8 v0, u8 v1, u8 c)
 	GX_Color1x8 (c);
 	GX_Position1x8 (v1);
 	GX_Color1x8 (c);
+#endif //__GX__
 }
 
 } //namespace menu 

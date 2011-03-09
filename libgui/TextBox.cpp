@@ -19,7 +19,11 @@
 **/
 
 #include "TextBox.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 #include "IPLFont.h"
 
 namespace menu {

@@ -19,7 +19,11 @@
 **/
 
 #include "MessageBox.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 #include "GuiResources.h"
 #include "resources.h"
 #include "Button.h"

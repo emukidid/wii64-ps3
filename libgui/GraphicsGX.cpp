@@ -18,6 +18,7 @@
  *
 **/
 
+#ifdef __GX__
 #include <math.h>
 #include "GraphicsGX.h"
 #include "../main/wii64config.h"
@@ -495,3 +496,4 @@ float Graphics::getCurrentTransparency(int index)
 }
 
 } //namespace menu 
+#endif //__GX__

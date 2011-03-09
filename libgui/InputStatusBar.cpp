@@ -20,12 +20,18 @@
 
 #include "InputStatusBar.h"
 #include "GuiResources.h"
+#ifdef __GX__
 #include "GraphicsGX.h"
+#else //__GX__
+#include "GraphicsRSX.h"
+#endif //!__GX__
 #include "IPLFont.h"
 #include "Image.h"
 #include "FocusManager.h"
 #include <math.h>
+#ifdef __GX__
 #include <gccore.h>
+#endif //__GX__
 #include "../main/wii64config.h"
 
 extern "C" {
@@ -129,8 +135,14 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 		switch (padType[i])
 		{
 		case PADTYPE_GAMECUBE:
+#ifdef PS3
+			//TODO: update availability here??
+//			controller_PS3.available[(int)padAssign[i]] = (gc_connected & (1<<padAssign[i])) ? 1 : 0;
+			if (controller_PS3.available[(int)padAssign[i]])
+#else //PS3
 			controller_GC.available[(int)padAssign[i]] = (gc_connected & (1<<padAssign[i])) ? 1 : 0;
 			if (controller_GC.available[(int)padAssign[i]])
+#endif //!PS3
 			{
 //				gfx.setColor(activeColor);
 //				IplFont::getInstance().drawInit(activeColor);
@@ -213,11 +225,17 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 			IplFont::getInstance().drawString((int) base_x+37, (int) base_y+52, buffer, 0.8, true);
 		}
 		//draw icon
+#ifdef __GX__
 		statusIcon->activateImage(GX_TEXMAP0);
 		GX_SetTevColorIn(GX_TEVSTAGE0,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_RASC);
 		GX_SetTevColorOp(GX_TEVSTAGE0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,GX_TRUE,GX_TEVPREV);
 		GX_SetTevAlphaIn(GX_TEVSTAGE0,GX_CA_ZERO,GX_CA_RASA,GX_CA_TEXA,GX_CA_ZERO);
 		GX_SetTevAlphaOp(GX_TEVSTAGE0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,GX_TRUE,GX_TEVPREV);
+#else //__GX__
+		//TODO: correct shader
+		gfx.setTEV(GX_MODULATE);
+		statusIcon->activateImage(GX_TEXMAP0);
+#endif //!__GX__
 		gfx.enableBlending(true);
 		gfx.drawImage(0, base_x, base_y, 48, 64, 0, 1, 0, 1);
 	}
