@@ -1,0 +1,21 @@
+void main
+(
+	float4 color0 : COLOR0,
+	float4 position : TEXCOORD0,
+	float2 texcoord : TEXCOORD1,
+	
+	uniform float mode,
+	uniform sampler2D texture,
+	
+	out float4 oColor
+)
+{
+	float4 color = tex2D(texture,texcoord);
+	
+	if(mode==1) //SHADER_PASSTEX
+		oColor = color;
+	if(mode==2) //SHADER_PASSCOLOR
+		oColor = color0;
+	if(mode==3) //SHADER_MODULATE
+		oColor = tex2D(texture,texcoord) * color0;
+}
