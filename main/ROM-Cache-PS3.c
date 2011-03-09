@@ -36,9 +36,10 @@
 #include "ROM-Cache.h"
 extern void dbg_printf(const char *fmt,...);
 #define MAX_ROM_SIZE 64*1024*1024
+#define LOAD_SIZE   (32*1024)
 
 //#ifdef MENU_V2
-//void LoadingBar_showBar(float percent, const char* string);
+void LoadingBar_showBar(float percent, const char* string);
 //#define PRINT DUMMY_print
 //#define SETLOADPROG DUMMY_setLoadProg
 //#define DRAWGUI DUMMY_draw
@@ -100,17 +101,19 @@ void ROMCache_read(u8* dest, u32 offset, u32 length){
 
 int ROMCache_load(fileBrowser_file* f){
 	dbg_printf("Loading ROM %s into RAM fully\r\n",f->name);
+	char txt[128];
+	sprintf(txt, "Loading ROM fully into RAM");
 
 	romFile_seekFile(ROMFile, 0, FILE_BROWSER_SEEK_SET);
 	
 	u32 offset = 0,loads_til_update = 0;
 	int bytes_read;
 	while(offset < ROMSize){
-		dbg_printf("Reading 0x%08X bytes from offset 0x%08X to 0x%08x\r\n",
-		262144,offset,rom+offset);
-		bytes_read = romFile_readFile(ROMFile, rom + offset, 262144);
-		dbg_printf("Read 0x%08X bytes from offset 0x%08X to 0x%08x\r\n",
-		bytes_read,offset,rom+offset);
+//		dbg_printf("Reading 0x%08X bytes from offset 0x%08X to 0x%08x\r\n",
+//		262144,offset,rom+offset);
+		bytes_read = romFile_readFile(ROMFile, rom + offset, LOAD_SIZE);
+//		dbg_printf("Read 0x%08X bytes from offset 0x%08X to 0x%08x\r\n",
+//		bytes_read,offset,rom+offset);
 		
 		if(bytes_read < 0){		// Read fail!
 			//SETLOADPROG( -1.0f );
@@ -126,14 +129,14 @@ int ROMCache_load(fileBrowser_file* f){
  			readBefore = 1;
 		}
 		//byteswap
-		byte_swap(&rom[offset], bytes_read);
+		byte_swap((char*) &rom[offset], bytes_read);
 		
 		offset += bytes_read;
 		
 		if(!loads_til_update--){
 			//SETLOADPROG( (float)offset/ROMSize );
 			//DRAWGUI();
-			//LoadingBar_showBar((float)offset/ROMSize, txt);
+			LoadingBar_showBar((float)offset/ROMSize, txt);
 			loads_til_update = 16;
 		}
 	}

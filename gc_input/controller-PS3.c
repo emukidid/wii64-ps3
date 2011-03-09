@@ -1,9 +1,9 @@
 /**
- * Wii64 - controller-GC.c
- * Copyright (C) 2007, 2008, 2009 Mike Slegeir
- * Copyright (C) 2007, 2008, 2009 sepp256
+ * Wii64 - controller-PS3.c
+ * Copyright (C) 2007, 2008, 2009, 2010 Mike Slegeir
+ * Copyright (C) 2007, 2008, 2009, 2010, 2011 sepp256
  * 
- * Gamecube controller input module
+ * PS3 controller input module
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
@@ -28,136 +28,127 @@
 #include "controller.h"
 
 enum {
-	ANALOG_AS_ANALOG = 1, C_STICK_AS_ANALOG = 2,
+	L_STICK_AS_ANALOG = 1, R_STICK_AS_ANALOG = 2,
 };
 
 enum {
-	PS3_UP  = 0x01,
-	PS3_LEFT  = 0x02,
-	PS3_RIGHT  = 0x04,
-	PS3_DOWN  = 0x08,
-	PS3_CROSS = 0x10,
-	PS3_SQUARE = 0x20,
-	PS3_CIRCLE = 0x40,
-	PS3_TRIANGLE = 0x80,
-	PS3_R1  = 0x01 << 8,
-	PS3_L2  = 0x02 << 8,
-	PS3_R2  = 0x04 << 8,
-	PS3_START  = 0x08 << 8,
-	ANALOG_L  = 0x01 << 16,
-	ANALOG_R  = 0x02 << 16,
-	ANALOG_U  = 0x04 << 16,
-	ANALOG_D  = 0x08 << 16,
-	C_STICK_L = 0x10 << 16,
-	C_STICK_R = 0x20 << 16,
-	C_STICK_U = 0x40 << 16,
-	C_STICK_D = 0x80 << 16,
+	PS3_BTN_LEFT		= (1<<15),
+	PS3_BTN_DOWN		= (1<<14),
+	PS3_BTN_RIGHT		= (1<<13),
+	PS3_BTN_UP			= (1<<12),
+	PS3_BTN_START		= (1<<11),
+	PS3_BTN_R3			= (1<<10),
+	PS3_BTN_L3			= (1<<9),
+	PS3_BTN_SELECT		= (1<<8),
+	PS3_BTN_SQUARE		= (1<<7),
+	PS3_BTN_CROSS		= (1<<6),
+	PS3_BTN_CIRCLE		= (1<<5),
+	PS3_BTN_TRIANGLE	= (1<<4),
+	PS3_BTN_R1			= (1<<3),
+	PS3_BTN_L1			= (1<<2),
+	PS3_BTN_R2			= (1<<1),
+	PS3_BTN_L2			= (1<<0),
+	L_STICK_L			= 0x01 << 16,
+	L_STICK_R			= 0x02 << 16,
+	L_STICK_U			= 0x04 << 16,
+	L_STICK_D			= 0x08 << 16,
+	R_STICK_L			= 0x10 << 16,
+	R_STICK_R			= 0x20 << 16,
+	R_STICK_U			= 0x40 << 16,
+	R_STICK_D			= 0x80 << 16,
 };
 
 static button_t buttons[] = {
-	{  0, ~0,                "None" },
-	{  1, PS3_UP,    "D-Up" },
-	{  2, PS3_LEFT,  "D-Left" },
-	{  3, PS3_RIGHT, "D-Right" },
-	{  4, PS3_DOWN,  "D-Down" },
-	{  5, PS3_R1,    "R1" },
-	{  6, PS3_L2,    "L2" },
-	{  7, PS3_R2,    "R2" },
-	{  8, PS3_CROSS,     "Cross" },
-	{  9, PS3_SQUARE,     "Square" },
-	{ 10, PS3_CIRCLE,     "Circle" },
-	{ 11, PS3_TRIANGLE,     "Triangle" },
-	{ 12, PS3_START, "Start" },
-	{ 13, C_STICK_U,        "C-Up" },
-	{ 14, C_STICK_L,        "C-Left" },
-	{ 15, C_STICK_R,        "C-Right" },
-	{ 16, C_STICK_D,        "C-Down" },
-	{ 17, ANALOG_U,         "A-Up" },
-	{ 18, ANALOG_L,         "A-Left" },
-	{ 19, ANALOG_R,         "A-Right" },
-	{ 20, ANALOG_D,         "A-Down" },
+	{  0, ~0,				"None" },
+	{  1, PS3_BTN_UP,		"D-Up" },
+	{  2, PS3_BTN_LEFT,		"D-Left" },
+	{  3, PS3_BTN_RIGHT,	"D-Right" },
+	{  4, PS3_BTN_DOWN,		"D-Down" },
+	{  5, PS3_BTN_L1,		"L1" },
+	{  6, PS3_BTN_L2,		"L2" },
+	{  7, PS3_BTN_L3,		"L3" },
+	{  8, PS3_BTN_R1,		"R1" },
+	{  9, PS3_BTN_R2,		"R2" },
+	{ 10, PS3_BTN_R3,		"R3" },
+	{ 11, PS3_BTN_CROSS,	"Cross" },
+	{ 12, PS3_BTN_SQUARE,	"Square" },
+	{ 13, PS3_BTN_CIRCLE,	"Circle" },
+	{ 14, PS3_BTN_TRIANGLE,	"Triangle" },
+	{ 15, PS3_BTN_START,	"Start" },
+	{ 16, PS3_BTN_SELECT,	"Select" },
+	{ 17, R_STICK_U,		"RS-Up" },
+	{ 18, R_STICK_L,		"RS-Left" },
+	{ 19, R_STICK_R,		"RS-Right" },
+	{ 20, R_STICK_D,		"RS-Down" },
+	{ 21, L_STICK_U,		"LS-Up" },
+	{ 22, L_STICK_L,		"LS-Left" },
+	{ 23, L_STICK_R,		"LS-Right" },
+	{ 24, L_STICK_D,		"LS-Down" },
 };
 
 static button_t analog_sources[] = {
-	{ 0, ANALOG_AS_ANALOG,  "Analog Stick" },
-	{ 1, C_STICK_AS_ANALOG, "C-Stick" },
+	{ 0, L_STICK_AS_ANALOG,  "Left Stick" },
+	{ 1, R_STICK_AS_ANALOG,  "Right Stick" },
 };
 
 static button_t menu_combos[] = {
-	{ 0, PS3_CIRCLE|PS3_TRIANGLE, "Circle+Triangle" },
-	{ 1, PS3_START|PS3_CROSS, "Start+Cross" },
+	{ 0, PS3_BTN_START|PS3_BTN_SELECT,		"Start+Select" },
+	{ 1, PS3_BTN_SQUARE|PS3_BTN_TRIANGLE,	"Square+Triangle" },
 };
 
-padInfo padinfo;
-
-static unsigned int getButtons(int Control)
+static u32 getButtons(u32 buttonsPS3, u32 analogPS3)
 {
-	padData paddata;
-	u32 b = 0;
-	/*s8 stickX      = PAD_StickX(Control);
-	s8 stickY      = PAD_StickY(Control);
-	s8 substickX   = PAD_SubStickX(Control);
-	s8 substickY   = PAD_SubStickY(Control);
+	//0xRH-RV-LH-LV 0x00 = Left/Up, 0xFF = Right/Down
+	u32 b = buttonsPS3;
+	s8 LstickX      = (s8) ((int)((analogPS3>>8) & 0xFF) - 128);
+	s8 LstickY      = (s8) ((int)((analogPS3>>0) & 0xFF) - 128);
+	s8 RstickX      = (s8) ((int)((analogPS3>>24) & 0xFF) - 128);
+	s8 RstickY      = (s8) ((int)((analogPS3>>16) & 0xFF) - 128);
 	
-	if(stickX    < -48) b |= ANALOG_L;
-	if(stickX    >  48) b |= ANALOG_R;
-	if(stickY    >  48) b |= ANALOG_U;
-	if(stickY    < -48) b |= ANALOG_D;
+	if(LstickX    < -25) b |= L_STICK_L;
+	if(LstickX    >  25) b |= L_STICK_R;
+	if(LstickY    < -25) b |= L_STICK_U;
+	if(LstickY    >  25) b |= L_STICK_D;
 	
-	if(substickX < -48) b |= C_STICK_L;
-	if(substickX >  48) b |= C_STICK_R;
-	if(substickY >  48) b |= C_STICK_U;
-	if(substickY < -48) b |= C_STICK_D;
-	*/
-	ioPadGetData(Control, &paddata);
-	if(paddata.BTN_LEFT){
-		b |= PS3_UP;
-	}
-	if(paddata.BTN_DOWN){
-		b |= PS3_DOWN;
-	}
-	if(paddata.BTN_RIGHT){
-		b |= PS3_RIGHT;
-	}
-	if(paddata.BTN_UP){
-		b |= PS3_UP;
-	}
-	if(paddata.BTN_CROSS){
-		b |= PS3_CROSS;
-	}
-	if(paddata.BTN_SQUARE){
-		b |= PS3_SQUARE;
-	}
-	if(paddata.BTN_CIRCLE){
-		b |= PS3_CIRCLE;
-	}
-	if(paddata.BTN_TRIANGLE){
-		b |= PS3_TRIANGLE;
-	}
-	if(paddata.BTN_R1){
-		b |= PS3_R1;
-	}
-	if(paddata.BTN_L2){
-		b |= PS3_L2;
-	}
-	if(paddata.BTN_R2){
-		b |= PS3_R2;
-	}
-	if(paddata.BTN_START){
-		b |= PS3_START;
-	}
+	if(RstickX    < -25) b |= R_STICK_L;
+	if(RstickX    >  25) b |= R_STICK_R;
+	if(RstickY    < -25) b |= R_STICK_U;
+	if(RstickY    >  25) b |= R_STICK_D;
+	
 	return b;
 }
 
+padInfo padinfo;
+
+static u32 previousButtonsPS3[4];
+static u32 previousAnalogPS3[4];
+
 static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 {
+	padData paddata;
+	u32 buttonsPS3, analogPS3;
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
 
-	controller_PS3.available[Control] = padinfo.status[Control];
 	if (!controller_PS3.available[Control]) return 0;
 
-	unsigned int b = getButtons(Control);
+	ioPadGetData(Control, &paddata);
+	if (paddata.len)
+	{
+		buttonsPS3 = ((paddata.button[2]&0xFF)<<8) | (paddata.button[3]&0xFF);
+		analogPS3 = ((paddata.button[4]&0xFF)<<24) | ((paddata.button[5]&0xFF)<<16) | 
+					((paddata.button[6]&0xFF)<<8) | (paddata.button[7]&0xFF); 
+		//0xRH-RV-LH-LV 0x00 = Left/Up, 0xFF = Right/Down
+		previousButtonsPS3[Control] = buttonsPS3;
+		previousAnalogPS3[Control] = analogPS3;
+	}
+	else
+	{
+		buttonsPS3 = previousButtonsPS3[Control];
+		analogPS3 = previousAnalogPS3[Control];
+	}
+
+	u32 b = getButtons(buttonsPS3,analogPS3);
 	inline int isHeld(button_tp button){
 		return (b & button->mask) == button->mask;
 	}
@@ -179,16 +170,16 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->L_CBUTTON    = isHeld(config->CL);
 	c->D_CBUTTON    = isHeld(config->CD);
 	c->U_CBUTTON    = isHeld(config->CU);
-/*
-	if(config->analog->mask == ANALOG_AS_ANALOG){
-		c->X_AXIS = 5*PAD_StickX(Control)/6;
-		c->Y_AXIS = 5*PAD_StickY(Control)/6;
-	} else if(config->analog->mask == C_STICK_AS_ANALOG){
-		c->X_AXIS = 5*PAD_SubStickX(Control)/6;
-		c->Y_AXIS = 5*PAD_SubStickY(Control)/6;
+
+	if(config->analog->mask == L_STICK_AS_ANALOG){
+		c->X_AXIS =  (s8) ((int)((analogPS3>>8) & 0xFF) - 128);
+		c->Y_AXIS = -(s8) ((int)((analogPS3>>0) & 0xFF) - 128);
+	} else if(config->analog->mask == R_STICK_AS_ANALOG){
+		c->X_AXIS =  (s8) ((int)((analogPS3>>24) & 0xFF) - 128);
+		c->Y_AXIS = -(s8) ((int)((analogPS3>>16) & 0xFF) - 128);
 	}
 	if(config->invertedY) c->Y_AXIS = -c->Y_AXIS;
-*/
+
 	// Return whether the exit button(s) are pressed
 	return isHeld(config->exit);
 }
@@ -215,7 +206,7 @@ static void assign(int p, int v){
 static void refreshAvailable(void);
 
 controller_t controller_PS3 =
-	{ 'G',
+	{ 'P',
 	  _GetKeys,
 	  configure,
 	  assign,
@@ -234,16 +225,16 @@ controller_t controller_PS3 =
 	    .DL        = &buttons[2],  // D-Pad Left
 	    .DR        = &buttons[3],  // D-Pad Right
 	    .DD        = &buttons[4],  // D-Pad Down
-	    .Z         = &buttons[5],  // Z
-	    .L         = &buttons[6],  // Left Trigger
-	    .R         = &buttons[7],  // Right Trigger
-	    .A         = &buttons[8],  // A
-	    .B         = &buttons[9],  // B
-	    .START     = &buttons[12], // Start
-	    .CU        = &buttons[13], // C-Stick Up
-	    .CL        = &buttons[14], // C-Stick Left
-	    .CR        = &buttons[15], // C-Stick Right
-	    .CD        = &buttons[16], // C-Stick Down
+	    .Z         = &buttons[6],  // L2
+	    .L         = &buttons[5],  // L1
+	    .R         = &buttons[8],  // R1
+	    .A         = &buttons[11], // Cross
+	    .B         = &buttons[13], // Circle
+	    .START     = &buttons[15], // Start
+	    .CU        = &buttons[17], // Right Stick Up
+	    .CL        = &buttons[18], // Right Stick Left
+	    .CR        = &buttons[19], // Right Stick Right
+	    .CD        = &buttons[20], // Right Stick Down
 	    .analog    = &analog_sources[0],
 	    .exit      = &menu_combos[0],
 	    .invertedY = 0,
@@ -251,7 +242,7 @@ controller_t controller_PS3 =
 	 };
 
 static void refreshAvailable(void){
-
+	//Note: 7 controllers can be connected to PS3. Maybe check up to 7 in the future?
 	ioPadGetInfo(&padinfo);
 	
 	int i;

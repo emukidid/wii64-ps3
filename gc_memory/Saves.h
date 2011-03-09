@@ -24,7 +24,7 @@
 #ifndef SAVES_H
 #define SAVES_H
 
-#include "../main/winlnxdefs.h"
+#include "../fileBrowser/fileBrowser.h"
 
 /*
 extern char saveEnabled;
@@ -38,17 +38,17 @@ extern char savepath[];
 
 // Return 0 if load/save fails, 1 otherwise
 
-int loadEeprom();
-int saveEeprom();
+int loadEeprom(fileBrowser_file* savepath);
+int saveEeprom(fileBrowser_file* savepath);
 
-int loadMempak();
-int saveMempak();
+int loadMempak(fileBrowser_file* savepath);
+int saveMempak(fileBrowser_file* savepath);
 
-int loadSram();
-int saveSram();
+int loadSram(fileBrowser_file* savepath);
+int saveSram(fileBrowser_file* savepath);
 
-int loadFlashram();
-int saveFlashram();
+int loadFlashram(fileBrowser_file* savepath);
+int saveFlashram(fileBrowser_file* savepath);
 
 #endif
 

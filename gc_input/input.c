@@ -38,8 +38,18 @@ static BOOL lastData[4];
 virtualControllers_t virtualControllers[4];
 
 controller_t* controller_ts[num_controller_t] =
+#if defined(PS3)
 	{ &controller_PS3,
 	 };
+#elif defined(WII) && !defined(NO_BT)
+	{ &controller_GC, &controller_Classic,
+	  &controller_WiimoteNunchuk,
+	  &controller_Wiimote,
+	 };
+#else
+	{ &controller_GC,
+	 };
+#endif
 
 // Use to invoke func on the mapped controller with args
 #define DO_CONTROL(Control,func,args...) \
@@ -174,8 +184,23 @@ EXPORT void CALL GetDllInfo ( PLUGIN_INFO * PluginInfo )
   output:   none
 *******************************************************************/
 extern int stop;
+extern void stop_it();
 EXPORT void CALL GetKeys(int Control, BUTTONS * Keys )
 {
+#if defined(WII) && !defined(NO_BT)
+	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
+	if (padType[virtualControllers[Control].number] == PADTYPE_WII)
+	{
+		if (virtualControllers[Control].control == &controller_Classic &&
+			!controller_Classic.available[virtualControllers[Control].number] &&
+			controller_WiimoteNunchuk.available[virtualControllers[Control].number])
+			assign_controller(Control, &controller_WiimoteNunchuk, virtualControllers[Control].number);
+		else if (virtualControllers[Control].control == &controller_WiimoteNunchuk &&
+			!controller_WiimoteNunchuk.available[virtualControllers[Control].number] &&
+			controller_Classic.available[virtualControllers[Control].number])
+			assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
+	}
+#endif
 	if(DO_CONTROL(Control, GetKeys, Keys, virtualControllers[Control].config))
 		stop_it();
 }
@@ -293,6 +318,7 @@ EXPORT void CALL WM_KeyDown( WPARAM wParam, LPARAM lParam )
 EXPORT void CALL WM_KeyUp( WPARAM wParam, LPARAM lParam )
 {
 }
+
 void pauseInput(void){
 	int i;
 	for(i=0; i<4; ++i)
@@ -304,6 +330,7 @@ void resumeInput(void){
 	for(i=0; i<4; ++i)
 		if(virtualControllers[i].inUse) DO_CONTROL(i, resume);
 }
+
 void init_controller_ts(void){
 	int i, j;
 	for(i=0; i<num_controller_t; ++i){
@@ -329,6 +356,8 @@ void assign_controller(int wv, controller_t* type, int wp){
 	type->assign(wp,wv);
 
 	control_info.Controls[wv].Present = 1;
+	if (pakMode[wv] == PAKMODE_MEMPAK)	control_info.Controls[wv].Plugin  = PLUGIN_MEMPAK;
+	else								control_info.Controls[wv].Plugin  = PLUGIN_RAW;
 }
 
 void unassign_controller(int wv){
@@ -360,6 +389,12 @@ void auto_assign_controllers(void){
 			if(w == 4) continue;
 
 			assign_controller(i, type, w);
+#if defined(PS3)
+			padType[i] = PADTYPE_GAMECUBE;
+#else
+			padType[i] = type == &controller_GC ? PADTYPE_GAMECUBE : PADTYPE_WII;
+#endif
+			padAssign[i] = w;
 
 			// Don't assign the next type over this one or the same controller
 			++num_assigned[t];
@@ -372,5 +407,92 @@ void auto_assign_controllers(void){
 	// 'Initialize' the unmapped virtual controllers
 	for(; i<4; ++i){
 		unassign_controller(i);
+		padType[i] = PADTYPE_NONE;
+	}
+}
+
+int load_configurations(FILE* f, controller_t* controller){
+	int i,j;
+	char magic[4] = { 
+		'W', 64, controller->identifier, CONTROLLER_CONFIG_VERSION
+	};
+	char actual[4];
+	fread(actual, 1, 4, f);
+	if(memcmp(magic, actual, 4))
+		return 0;
+	
+	inline button_t* getPointer(button_t* list, int size){
+		int index;
+		fread(&index, 4, 1, f);
+		return list + (index % size);
+	}
+	inline button_t* getButton(void){
+		return getPointer(controller->buttons, controller->num_buttons);
+	}
+	
+	for(i=0; i<4; ++i){
+		controller->config_slot[i].DL = getButton();
+		controller->config_slot[i].DR = getButton();
+		controller->config_slot[i].DU = getButton();
+		controller->config_slot[i].DD = getButton();
+		
+		controller->config_slot[i].A     = getButton();
+		controller->config_slot[i].B     = getButton();
+		controller->config_slot[i].START = getButton();
+		
+		controller->config_slot[i].L = getButton();
+		controller->config_slot[i].R = getButton();
+		controller->config_slot[i].Z = getButton();
+		
+		controller->config_slot[i].CL = getButton();
+		controller->config_slot[i].CR = getButton();
+		controller->config_slot[i].CU = getButton();
+		controller->config_slot[i].CD = getButton();
+		
+		controller->config_slot[i].analog = 
+			getPointer(controller->analog_sources, controller->num_analog_sources);
+		controller->config_slot[i].exit =
+			getPointer(controller->menu_combos, controller->num_menu_combos);
+		fread(&controller->config_slot[i].invertedY, 4, 1, f);
+	}
+
+	if (loadButtonSlot != LOADBUTTON_DEFAULT)
+		for(j=0; j<4; ++j)
+			memcpy(&controller->config[j],
+			       &controller->config_slot[(int)loadButtonSlot],
+			       sizeof(controller_config_t));
+	
+	return 1;
+}
+
+void save_configurations(FILE* f, controller_t* controller){
+	int i;
+	char magic[4] = { 
+		'W', 64, controller->identifier, CONTROLLER_CONFIG_VERSION
+	};
+	fwrite(magic, 1, 4, f);
+	
+	for(i=0; i<4; ++i){
+		fwrite(&controller->config_slot[i].DL->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].DR->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].DU->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].DD->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].A->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].B->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].START->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].L->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].R->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].Z->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].CL->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].CR->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].CU->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].CD->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].analog->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].exit->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].invertedY, 4, 1, f);
 	}
 }

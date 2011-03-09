@@ -106,8 +106,26 @@ typedef struct _virtualControllers_t {
 extern virtualControllers_t virtualControllers[4];
 
 // List of all the defined controller_t's
+#if defined(PS3)
 #define num_controller_t 1
 extern controller_t controller_PS3;
+
+#elif defined(WII) && !defined(NO_BT)
+
+#define num_controller_t 4
+extern controller_t controller_GC;
+extern controller_t controller_Classic;
+extern controller_t controller_WiimoteNunchuk;
+extern controller_t controller_Wiimote;
+extern controller_t* controller_ts[num_controller_t];
+
+#else // WII && !NO_BT
+
+#define num_controller_t 1
+extern controller_t controller_GC;
+extern controller_t* controller_ts[num_controller_t];
+
+#endif // WII && !NO_BT
 
 void init_controller_ts(void);
 void assign_controller(int whichVirtual, controller_t*, int whichPhysical);
