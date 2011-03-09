@@ -65,7 +65,11 @@ static char FRAME_STRINGS[16][15] =
 	  "Automatic",
 	  "Manual",
 	  "None",
+#ifdef PS3
+	  "PS3 Pad",
+#else
 	  "Gamecube Pad",
+#endif
 	  "Wii Pad",
 	  "Auto Assign",
 	  "",
@@ -225,7 +229,11 @@ void Func_AssignPad(int i)
 	switch (padType[i])
 	{
 	case PADTYPE_GAMECUBE:
+#ifdef PS3
+		type = &controller_PS3;
+#else //PS3
 		type = &controller_GC;
+#endif //!PS3
 		break;
 #ifdef HW_RVL
 	case PADTYPE_WII:

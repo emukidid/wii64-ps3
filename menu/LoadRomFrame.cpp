@@ -28,9 +28,13 @@
 
 extern "C" {
 #include "../fileBrowser/fileBrowser.h"
+#ifdef PS3
+#include "../fileBrowser/fileBrowser-ps3.h"
+#else //PS3
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#endif //!PS3
 #ifdef WII
 #include "../fileBrowser/fileBrowser-WiiFS.h"
 #endif
@@ -114,6 +118,7 @@ extern void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 
 void Func_LoadFromSD()
 {
+#ifndef PS3
 	// Deinit any existing romFile state
 	if(romFile_deinit) romFile_deinit( romFile_topLevel );
 	// Change all the romFile pointers
@@ -129,10 +134,12 @@ void Func_LoadFromSD()
 
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
 	fileBrowserFrame_OpenDirectory(romFile_topLevel);
+#endif
 }
 
 void Func_LoadFromDVD()
 {
+#ifndef PS3
 	// Deinit any existing romFile state
 	if(romFile_deinit) romFile_deinit( romFile_topLevel );
 	// Change all the romFile pointers
@@ -147,10 +154,28 @@ void Func_LoadFromDVD()
 
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
 	fileBrowserFrame_OpenDirectory(romFile_topLevel);
+#endif
 }
 
 void Func_LoadFromUSB()
 {
+#ifdef PS3
+	// Deinit any existing romFile state
+	if(romFile_deinit) romFile_deinit( romFile_topLevel );
+	// Change all the romFile pointers
+	romFile_topLevel = &topLevel_ps3_Default;
+	romFile_readDir  = fileBrowser_ps3_readDir;
+	romFile_readFile = fileBrowser_ps3ROM_readFile;
+	romFile_seekFile = fileBrowser_ps3_seekFile;
+	romFile_init     = fileBrowser_ps3_init;
+	romFile_deinit   = fileBrowser_ps3ROM_deinit;
+	// Make sure the romFile system is ready before we browse the filesystem
+	romFile_deinit( romFile_topLevel );
+	romFile_init( romFile_topLevel );
+	
+	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
+	fileBrowserFrame_OpenDirectory(romFile_topLevel);
+#endif
 #ifdef WII
 	// Deinit any existing romFile state
 	if(romFile_deinit) romFile_deinit( romFile_topLevel );

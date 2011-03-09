@@ -34,8 +34,12 @@
 extern "C" {
 #include "../gc_input/controller.h"
 #include "../fileBrowser/fileBrowser.h"
+#ifdef PS3
+#include "../fileBrowser/fileBrowser-ps3.h"
+#else //PS3
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#endif //!PS3
 }
 
 void Func_TabGeneral();
@@ -413,6 +417,7 @@ void SettingsFrame::drawChildren(menu::Graphics &gfx)
 {
 	if(isVisible())
 	{
+		/*TODO: implement for PS3
 #ifdef HW_RVL
 		WPADData* wiiPad = menu::Input::getInstance().getWpad();
 #endif
@@ -497,7 +502,7 @@ void SettingsFrame::drawChildren(menu::Graphics &gfx)
 				}
 			}
 #endif //HW_RVL
-		}
+		}*/
 
 		//Draw buttons
 		menu::ComponentList::const_iterator iteration;
@@ -617,6 +622,7 @@ extern void writeConfig(FILE* f);
 
 void Func_SaveSettingsSD()
 {
+#ifndef PS3
 	fileBrowser_file* configFile_file;
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
 	int num_written = 0;
@@ -632,17 +638,26 @@ void Func_SaveSettingsSD()
 	if (num_written == 1)
 		menu::MessageBox::getInstance().setMessage("Saved settings.cfg to SD");
 	else
+#endif //!PS3
 		menu::MessageBox::getInstance().setMessage("Error saving settings.cfg to SD");
 }
 
 void Func_SaveSettingsUSB()
 {
 	fileBrowser_file* configFile_file;
+#ifdef PS3
+	int (*configFile_init)(fileBrowser_file*) = fileBrowser_ps3_init;
+	int num_written = 0;
+	configFile_file = &saveDir_ps3_Default;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "/dev_usb/wii64/settings.cfg", "wb" ); //attempt to open file
+#else //PS3
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
 	int num_written = 0;
 	configFile_file = &saveDir_libfat_USB;
 	if(configFile_init(configFile_file)) {                //only if device initialized ok
 		FILE* f = fopen( "usb:/wii64/settings.cfg", "wb" ); //attempt to open file
+#endif //!PS3
 		if(f) {
 			writeConfig(f);                                   //write out the config
 			fclose(f);
@@ -784,6 +799,7 @@ void Func_ConfigureButtons()
 
 void Func_SaveButtonsSD()
 {
+#ifndef PS3
 	fileBrowser_file* configFile_file;
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
 	int num_written = 0;
@@ -819,12 +835,25 @@ void Func_SaveButtonsSD()
 	if (num_written == num_controller_t)
 		menu::MessageBox::getInstance().setMessage("Saved Button Configs to SD");
 	else
+#endif //!PS3
 		menu::MessageBox::getInstance().setMessage("Error saving Button Configs to SD");
 }
 
 void Func_SaveButtonsUSB()
 {
 	fileBrowser_file* configFile_file;
+#ifdef PS3
+	int (*configFile_init)(fileBrowser_file*) = fileBrowser_ps3_init;
+	int num_written = 0;
+	configFile_file = &saveDir_ps3_Default;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "/dev_usb/wii64/controlP.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_PS3);					//write out GC controller mappings
+			fclose(f);
+			num_written++;
+		}
+#else //PS3
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
 	int num_written = 0;
 	configFile_file = &saveDir_libfat_USB;
@@ -835,6 +864,7 @@ void Func_SaveButtonsUSB()
 			fclose(f);
 			num_written++;
 		}
+#endif //!PS3
 #ifdef HW_RVL
 		f = fopen( "usb:/wii64/controlC.cfg", "wb" );  //attempt to open file
 		if(f) {

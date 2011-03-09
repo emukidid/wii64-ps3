@@ -30,8 +30,10 @@
 extern "C" {
 #include "../gc_memory/Saves.h"
 #include "../fileBrowser/fileBrowser.h"
+#ifndef PS3
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#endif //!PS3
 #ifdef WII
 #include "../fileBrowser/fileBrowser-WiiFS.h"
 #endif
@@ -121,6 +123,7 @@ SaveGameFrame::~SaveGameFrame()
 
 void Func_SaveGameCardA()
 {
+#ifndef PS3
 	// Adjust saveFile pointers
 //	saveFile_dir = (item_num%2) ? &saveDir_CARD_SlotB : &saveDir_CARD_SlotA;
 	saveFile_dir       = &saveDir_CARD_SlotA;
@@ -140,10 +143,12 @@ void Func_SaveGameCardA()
 		
 	if (result)	menu::MessageBox::getInstance().setMessage("Saved game to memcard in Slot A");
 	else		menu::MessageBox::getInstance().setMessage("Nothing to save");
+#endif
 }
 
 void Func_SaveGameCardB()
 {
+#ifndef PS3
 	// Adjust saveFile pointers
 //	saveFile_dir = (item_num%2) ? &saveDir_CARD_SlotB : &saveDir_CARD_SlotA;
 	saveFile_dir       = &saveDir_CARD_SlotB;
@@ -163,10 +168,12 @@ void Func_SaveGameCardB()
 		
 	if (result)	menu::MessageBox::getInstance().setMessage("Saved game to memcard in Slot B");
 	else		menu::MessageBox::getInstance().setMessage("Nothing to save");
+#endif
 }
 
 void Func_SaveGameSD()
 {
+#ifndef PS3
 	// Adjust saveFile pointers
 	saveFile_dir = &saveDir_libfat_Default;
 	saveFile_readFile  = fileBrowser_libfat_readFile;
@@ -184,6 +191,7 @@ void Func_SaveGameSD()
 		
 	if (result)	menu::MessageBox::getInstance().setMessage("Saved game to SD card");
 	else		menu::MessageBox::getInstance().setMessage("Nothing to save");
+#endif
 }
 
 void Func_SaveGameWiiFS()

@@ -208,11 +208,12 @@ ConfigureButtonsFrame::~ConfigureButtonsFrame()
 
 }
 
-static char controllerTypeStrings[5][17] =
+static char controllerTypeStrings[6][17] =
 	{ "Gamecube",
 	  "Classic",
 	  "Wiimote+Nunchuck",
 	  "Wiimote",
+	  "PS3",
 	  "NULL"};
 
 enum ActivePadType
@@ -221,6 +222,7 @@ enum ActivePadType
 	ACTIVEPADTYPE_CLASSIC,
 	ACTIVEPADTYPE_WIIMOTENUNCHUCK,
 	ACTIVEPADTYPE_WIIMOTE,
+	ACTIVEPADTYPE_PS3,
 	ACTIVEPADTYPE_NONE,
 };
 
@@ -245,6 +247,10 @@ void ConfigureButtonsFrame::activateSubmenu(int submenu)
 	}
 
 	//Fill out title text
+#ifdef PS3
+	if (virtualControllers[activePad].control == &controller_PS3)
+		activePadType = ACTIVEPADTYPE_PS3;
+#else //PS3
 	if (virtualControllers[activePad].control == &controller_GC)
 		activePadType = ACTIVEPADTYPE_GAMECUBE;
 #ifdef HW_RVL
@@ -255,6 +261,7 @@ void ConfigureButtonsFrame::activateSubmenu(int submenu)
 	else if (virtualControllers[activePad].control == &controller_Wiimote)
 		activePadType = ACTIVEPADTYPE_WIIMOTE;
 #endif //HW_RVL
+#endif //!PS3
 	else
 		activePadType = ACTIVEPADTYPE_NONE;
 
@@ -354,10 +361,15 @@ void ConfigureButtonsFrame::drawChildren(menu::Graphics &gfx)
 		gfx.setColor(controllerColors[activePad]);
 		controllerIcon = menu::Resources::getInstance().getImage(menu::Resources::IMAGE_N64_CONTROLLER);
 		controllerIcon->activateImage(GX_TEXMAP0);
+#ifdef PS3
+		//TODO: make a custom filter
+		gfx.setTEV(GX_MODULATE);
+#else
 		GX_SetTevColorIn(GX_TEVSTAGE0,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_RASC);
 		GX_SetTevColorOp(GX_TEVSTAGE0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,GX_TRUE,GX_TEVPREV);
 		GX_SetTevAlphaIn(GX_TEVSTAGE0,GX_CA_ZERO,GX_CA_RASA,GX_CA_TEXA,GX_CA_ZERO);
 		GX_SetTevAlphaOp(GX_TEVSTAGE0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,GX_TRUE,GX_TEVPREV);
+#endif
 		gfx.enableBlending(true);
 		gfx.drawImage(0, base_x, base_y, 208, 200, 0, 1, 0, 1);
 		gfx.setTEV(GX_PASSCLR);

@@ -30,11 +30,17 @@
 
 extern "C" {
 #include "../fileBrowser/fileBrowser.h"
+#ifdef PS3
+#include "../fileBrowser/fileBrowser-ps3.h"
+#else //PS3
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#endif //!PS3
 #include "../main/rom.h"
+#ifndef PS3
 #include "../main/gc_dvd.h"
+#endif //!PS3
 #include "../main/ROM-Cache.h"
 #include "../main/wii64config.h"
 }
@@ -153,6 +159,7 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 {
 	if(isVisible())
 	{
+		/*TODO Implement for PS3
 #ifdef HW_RVL
 		WPADData* wiiPad = menu::Input::getInstance().getWpad();
 #endif
@@ -243,7 +250,7 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 				}
 			}
 #endif //HW_RVL
-		}
+		}*/
 
 		//Draw buttons
 		menu::ComponentList::const_iterator iteration;
@@ -354,6 +361,7 @@ void fileBrowserFrame_Error(fileBrowser_file* dir, int error_code)
 		FRAME_BUTTONS[i].button->setActive(false);
 	for (int i = 0; i<NUM_FILE_SLOTS; i++)
 		FRAME_BUTTONS[i+2].buttonString = FRAME_STRINGS[2];
+#ifndef PS3
 	if(error_code == NO_HW_ACCESS) {
   	sprintf(feedback_string,"DVDX v2 not found");
 	}
@@ -362,6 +370,9 @@ void fileBrowserFrame_Error(fileBrowser_file* dir, int error_code)
 	}
 	//set first entry to read 'error' and return to main menu
 	else if(dir->name)
+#else //!PS3
+	if(dir->name)
+#endif //PS3
 	  sprintf(feedback_string,"Error opening directory \"%s\"",&dir->name[0]);
 	else
 	  strcpy(feedback_string,"An error occured");

@@ -34,8 +34,12 @@ extern "C" {
 #include "../main/plugin.h"
 #include "../main/savestates.h"
 #include "../fileBrowser/fileBrowser.h"
+#ifdef PS3
+#include "../fileBrowser/fileBrowser-ps3.h"
+#else
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#endif
 }
 
 void Func_ShowRomInfo();
@@ -192,6 +196,14 @@ void Func_LoadSave()
 		return;
 	}
 
+#ifdef PS3
+	// Adjust saveFile pointers
+	saveFile_dir       = &saveDir_ps3_Default;
+	saveFile_readFile  = fileBrowser_ps3_readFile;
+	saveFile_writeFile = fileBrowser_ps3_writeFile;
+	saveFile_init      = fileBrowser_ps3_init;
+	saveFile_deinit    = fileBrowser_ps3_deinit;
+#else //PS3
 	switch (nativeSaveDevice)
   {
   	case NATIVESAVEDEVICE_SD:
@@ -213,6 +225,7 @@ void Func_LoadSave()
   		saveFile_deinit    = fileBrowser_CARD_deinit;
   		break;
   }
+#endif //!PS3
 
 	// Try loading everything
 	int result = 0;
@@ -223,6 +236,10 @@ void Func_LoadSave()
 	result += loadFlashram(saveFile_dir);
 	saveFile_deinit(saveFile_dir);
 
+#ifdef PS3
+	if (result) menu::MessageBox::getInstance().setMessage("Loaded save from USB device");
+	else		menu::MessageBox::getInstance().setMessage("No saves found on USB device");
+#else //PS3
 	switch (nativeSaveDevice)
 	{
 		case NATIVESAVEDEVICE_SD:
@@ -242,6 +259,7 @@ void Func_LoadSave()
 			else		menu::MessageBox::getInstance().setMessage("No saves found on memcard B");
 			break;
 	}
+#endif //!PS3
 	sramWritten = eepromWritten = mempakWritten = flashramWritten = false;
 }
 
@@ -251,6 +269,14 @@ void Func_SaveGame()
     menu::MessageBox::getInstance().setMessage("Nothing to save");
     return;
   }
+#ifdef PS3
+	// Adjust saveFile pointers
+	saveFile_dir       = &saveDir_ps3_Default;
+	saveFile_readFile  = fileBrowser_ps3_readFile;
+	saveFile_writeFile = fileBrowser_ps3_writeFile;
+	saveFile_init      = fileBrowser_ps3_init;
+	saveFile_deinit    = fileBrowser_ps3_deinit;
+#else //PS3
 	switch (nativeSaveDevice)
   {
   	case NATIVESAVEDEVICE_SD:
@@ -272,6 +298,7 @@ void Func_SaveGame()
   		saveFile_deinit    = fileBrowser_CARD_deinit;
   		break;
   }
+#endif //!PS3
 
 	// Try saving everything
 	int amountSaves = flashramWritten + sramWritten + eepromWritten + mempakWritten;
@@ -284,6 +311,9 @@ void Func_SaveGame()
 	saveFile_deinit(saveFile_dir);
 
 	if (result==amountSaves) {	
+#ifdef PS3
+		menu::MessageBox::getInstance().setMessage("Saved game to USB device");
+#else //PS3
 		switch (nativeSaveDevice)
 		{
 			case NATIVESAVEDEVICE_SD:
@@ -299,6 +329,7 @@ void Func_SaveGame()
 				menu::MessageBox::getInstance().setMessage("Saved game to memcard in Slot B");
 				break;
 		}
+#endif //!PS3
 		sramWritten = eepromWritten = mempakWritten = flashramWritten = false;
 	}
 	else		menu::MessageBox::getInstance().setMessage("Failed to Save");

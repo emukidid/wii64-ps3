@@ -23,6 +23,7 @@
 #include "../libgui/CursorManager.h"
 
 MenuContext *pMenuContext;
+extern "C" void dbg_printf(const char *fmt,...);
 
 MenuContext::MenuContext(GXRModeObj *vmode)
 		: currentActiveFrame(0),
@@ -39,10 +40,13 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 		  configureButtonsFrame(0)
 {
 	pMenuContext = this;
+//	dbg_printf("Initialize MenuContext\r\n");
 
 	menu::Gui::getInstance().setVmode(vmode);
+//	dbg_printf("MenuContext - setVmode done\r\n");
 
 	mainFrame = new MainFrame();
+//	dbg_printf("MenuContext - new MainFrame\r\n");
 	loadRomFrame = new LoadRomFrame();
 	fileBrowserFrame = new FileBrowserFrame();
 	currentRomFrame = new CurrentRomFrame();
@@ -55,6 +59,7 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 	configureButtonsFrame = new ConfigureButtonsFrame();
 
 	menu::Gui::getInstance().addFrame(mainFrame);
+//	dbg_printf("MenuContext - add MainFrame\r\n");
 	menu::Gui::getInstance().addFrame(loadRomFrame);
 	menu::Gui::getInstance().addFrame(fileBrowserFrame);
 	menu::Gui::getInstance().addFrame(currentRomFrame);
@@ -67,7 +72,9 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 	menu::Gui::getInstance().addFrame(configureButtonsFrame);
 
 	menu::Focus::getInstance().setFocusActive(true);
+//	dbg_printf("MenuContext - setFocusActive\r\n");
 	setActiveFrame(FRAME_MAIN);
+//	dbg_printf("Initialized MenuContext\r\n");
 }
 
 MenuContext::~MenuContext()
@@ -89,6 +96,7 @@ MenuContext::~MenuContext()
 bool MenuContext::isRunning()
 {
 	bool isRunning = true;
+//	dbg_printf("MenuContext isRunning\r\n");
 //	printf("MenuContext isRunning\n");
 	draw();
 

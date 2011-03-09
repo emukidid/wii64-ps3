@@ -30,8 +30,10 @@
 extern "C" {
 #include "../gc_memory/Saves.h"
 #include "../fileBrowser/fileBrowser.h"
+#ifndef PS3
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#endif
 #ifdef WII
 #include "../fileBrowser/fileBrowser-WiiFS.h"
 #endif
@@ -117,6 +119,7 @@ extern BOOL hasLoadedROM;
 
 void Func_LoadSaveCardA()
 {
+#ifndef PS3
 	if(!hasLoadedROM)
 	{
 		menu::MessageBox::getInstance().setMessage("Please load a ROM first");
@@ -141,10 +144,12 @@ void Func_LoadSaveCardA()
 	
 	if (result)	menu::MessageBox::getInstance().setMessage("Loaded save from memcard in slot A");
 	else		menu::MessageBox::getInstance().setMessage("No saves found on memcard");
+#endif
 }
 
 void Func_LoadSaveCardB()
 {
+#ifndef PS3
 	if(!hasLoadedROM)
 	{
 		menu::MessageBox::getInstance().setMessage("Please load a ROM first");
@@ -169,10 +174,12 @@ void Func_LoadSaveCardB()
 	
 	if (result)	menu::MessageBox::getInstance().setMessage("Loaded save from memcard in slot B");
 	else		menu::MessageBox::getInstance().setMessage("No saves found on memcard");
+#endif
 }
 
 void Func_LoadSaveSD()
 {
+#ifndef PS3
 	if(!hasLoadedROM)
 	{
 		menu::MessageBox::getInstance().setMessage("Please load a ROM first");
@@ -198,6 +205,7 @@ void Func_LoadSaveSD()
 		
 	if (result)	menu::MessageBox::getInstance().setMessage("Loaded save from SD card");
 	else		menu::MessageBox::getInstance().setMessage("No saves found on SD card");
+#endif
 }
 
 void Func_LoadSaveWiiFS()

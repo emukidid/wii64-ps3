@@ -42,11 +42,15 @@ extern "C" {
 #include "../main/plugin.h"
 #include "../main/savestates.h"
 #include "../fileBrowser/fileBrowser.h"
+#ifdef PS3
+#include "../fileBrowser/fileBrowser-ps3.h"
+#else //PS3
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
 #include "../main/gc_dvd.h"
+#endif //!PS3
 }
-#include <ogc/dvd.h>
+//#include <ogc/dvd.h>
 
 void Func_LoadROM();
 void Func_CurrentROM();
@@ -134,10 +138,30 @@ MainFrame::~MainFrame()
 }
 
 extern MenuContext *pMenuContext;
+extern void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 
 void Func_LoadROM()
 {
+#ifdef PS3
+	//Select USB device only
+	// Deinit any existing romFile state
+	if(romFile_deinit) romFile_deinit( romFile_topLevel );
+	// Change all the romFile pointers
+	romFile_topLevel = &topLevel_ps3_Default;
+	romFile_readDir  = fileBrowser_ps3_readDir;
+	romFile_readFile = fileBrowser_ps3ROM_readFile;
+	romFile_seekFile = fileBrowser_ps3_seekFile;
+	romFile_init     = fileBrowser_ps3_init;
+	romFile_deinit   = fileBrowser_ps3ROM_deinit;
+	// Make sure the romFile system is ready before we browse the filesystem
+	romFile_deinit( romFile_topLevel );
+	romFile_init( romFile_topLevel );
+	
+	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
+	fileBrowserFrame_OpenDirectory(romFile_topLevel);
+#else //PS3
 	pMenuContext->setActiveFrame(MenuContext::FRAME_LOADROM);
+#endif //!PS3
 }
 
 extern BOOL hasLoadedROM;
@@ -185,12 +209,12 @@ void Func_Credits()
 	menu::MessageBox::getInstance().setMessage(CreditsInfo);
 }
 
-extern char shutdown;
+extern char shutdownMenu;
 
 void Func_ExitToLoader()
 {
 	if(menu::MessageBox::getInstance().askMessage("Are you sure you want to exit to loader?"))
-		shutdown = 2;
+		shutdownMenu = 2;
 //#ifdef WII
 //	DI_Close();
 //#endif
@@ -224,7 +248,7 @@ void Func_PlayGame()
 		menu::MessageBox::getInstance().setMessage("Please load a ROM first");
 		return;
 	}
-	
+/*	TODO: Port the button release wait and file IO to PS3...
 	//Wait until 'A' button released before play/resume game
 	menu::Cursor::getInstance().setFreezeAction(true);
 	menu::Focus::getInstance().setFreezeAction(true);
@@ -244,10 +268,12 @@ void Func_PlayGame()
 	}
 	menu::Cursor::getInstance().setFreezeAction(false);
 	menu::Focus::getInstance().setFreezeAction(false);
-
+*/
 	menu::Gui::getInstance().gfx->clearEFB((GXColor){0, 0, 0, 0xFF}, 0x000000);
 
+#ifndef PS3
 	pauseRemovalThread();
+#endif
 	resumeAudio();
 	resumeInput();
 	menuActive = 0;
@@ -261,10 +287,20 @@ void Func_PlayGame()
 	menuActive = 1;
 	pauseInput();
 	pauseAudio();
+#ifndef PS3
   continueRemovalThread();
+#endif
 	
   if(autoSave==AUTOSAVE_ENABLE) {
     if(flashramWritten || sramWritten || eepromWritten || mempakWritten) {  //something needs saving
+#ifdef PS3
+      // Adjust saveFile pointers
+      saveFile_dir = &saveDir_ps3_Default;
+      saveFile_readFile  = fileBrowser_ps3_readFile;
+      saveFile_writeFile = fileBrowser_ps3_writeFile;
+      saveFile_init      = fileBrowser_ps3_init;
+      saveFile_deinit    = fileBrowser_ps3_deinit;
+#else //PS3
       switch (nativeSaveDevice)
     	{
     		case NATIVESAVEDEVICE_SD:
@@ -286,6 +322,7 @@ void Func_PlayGame()
     			saveFile_deinit    = fileBrowser_CARD_deinit;
     			break;
     	}
+#endif //!PS3
     	// Try saving everything
     	int amountSaves = flashramWritten + sramWritten + eepromWritten + mempakWritten;
     	int result = 0;
@@ -296,6 +333,9 @@ void Func_PlayGame()
     	result += saveFlashram(saveFile_dir);
     	saveFile_deinit(saveFile_dir);
     	if (result==amountSaves) {  //saved all of them ok	
+#ifdef PS3
+    		menu::MessageBox::getInstance().fadeMessage("Automatically saved to USB device");
+#else //PS3
     		switch (nativeSaveDevice)
     		{
     			case NATIVESAVEDEVICE_SD:
@@ -311,6 +351,7 @@ void Func_PlayGame()
     				menu::MessageBox::getInstance().fadeMessage("Automatically saved to memcard in Slot B");
     				break;
     		}
+#endif //!PS3
     		flashramWritten = sramWritten = eepromWritten = mempakWritten = 0;  //nothing new written since save
   		}
   	  else		
