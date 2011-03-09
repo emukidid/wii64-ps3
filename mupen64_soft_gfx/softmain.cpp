@@ -24,6 +24,14 @@ void showLoadProgress(float percent){
 	vi->showLoadProg(percent);
 }
 
+void gfx_set_window(int x, int y, int width, int height){
+	//We won't actually implement this for soft_gfx
+/*	OGL.GXorigX = x;
+	OGL.GXorigY = y;
+	OGL.GXwidth = width;
+	OGL.GXheight = height;*/
+}
+
 /******************************************************************
   Function: CaptureScreen
   Purpose:  This function dumps the current frame to a file

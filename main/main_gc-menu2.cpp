@@ -217,8 +217,6 @@ void writeConfig(FILE* f);
 
 extern "C" void gfx_set_fb(unsigned int* fb1, unsigned int* fb2);
 void gfx_set_window(int x, int y, int width, int height);
-//TODO: implement this is soft_gfx:
-void gfx_set_window(int x, int y, int width, int height) { }
 // -- End plugin data --
 
 int GX_xfb_offset = 0;
@@ -477,12 +475,11 @@ int loadROM(fileBrowser_file* rom){
 	// Init everything for this ROM
 	init_memory();
 
-/*	TODO: Add to soft_gfx
 //	gfx_set_fb(xfb[0], xfb[1]);
 	if (screenMode == SCREENMODE_16x9_PILLARBOX)
 		gfx_set_window( 78, 0, 483, 480);
 	else
-		gfx_set_window( 0, 0, 640, 480);*/
+		gfx_set_window( 0, 0, 640, 480);
 
 	gfx_info_init();
 	audio_info_init();

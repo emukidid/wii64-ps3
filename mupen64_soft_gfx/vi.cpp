@@ -37,6 +37,7 @@
 #ifdef DEBUGON
 # include <debug.h>
 #endif
+#ifdef PS3
 #include <rsx/rsx.h>
 #include <sysutil/video.h>
 #include "../main/rsxutil.h"
@@ -44,20 +45,27 @@
 #include <vectormath/cpp/vectormath_aos.h>
 using namespace Vectormath::Aos;
 
-#include "texture_shader_vpo.h"
-#include "texture_shader_fpo.h"
+#include "combined_shader_vpo.h"
+#include "combined_shader_fpo.h"
+#endif //PS3
 
 
 VI::VI(GFX_INFO info) : gfxInfo(info), bpp(0)
 {
-//	FBtex = (u16*) memalign(32,640*480*2);
+#ifdef PS3
 	FBtex = (u16*)rsxMemalign(128,(640*480*2));
+#else //PS3
+	FBtex = (u16*) memalign(32,640*480*2);
+#endif //!PS3
 }
 
 VI::~VI()
 {
-//	free(FBtex);
+#ifdef PS3
 	rsxFree(FBtex);
+#else //PS3
+	free(FBtex);
+#endif //!PS3
 }
 
 void VI::statusChanged()
@@ -125,8 +133,10 @@ unsigned int convert_pixels(short src1, short src2){
 	return (y1 << 24) | (cb << 16) | (y2 << 8) | cr;
 }
 
+#ifdef PS3
 extern u32 *color_buffer[2];
 extern VideoResolution res;
+#endif //PS3
 
 void VI::updateScreen()
 {
@@ -253,38 +263,7 @@ void VI::updateScreen()
 	  }
      }*/
 
-/*   //N64 Framebuffer is in RGB5A1 format, so shift by 1 and retile.
-	for (int j=0; j<480; j+=4)
-	{
-		for (int i=0; i<640; i+=4)
-		{
-			for (int jj=0; jj<4; jj++)
-			{
-				if (j+jj < miny || j+jj > maxy)
-				{
-					FBtex[ind++] = 0;
-					FBtex[ind++] = 0;
-					FBtex[ind++] = 0;
-					FBtex[ind++] = 0;
-				}
-				else
-				{
-					px = scale_x*i;
-					py = scale_y*(j+jj);
-					for (int ii=0; ii<4; ii++)
-					{
-						if (i+ii < minx || i+ii > maxx)
-							FBtex[ind++] = 0;
-						else
-							FBtex[ind++] = 0x8000 | (im16[((int)py*(*gfxInfo.VI_WIDTH_REG)+(int)px)]>>1);
-						px += scale_x;
-					}
-				}
-			}
-		}
-	}*/
-
-
+#ifdef PS3
 	//init shader:
 	u32 fpsize = 0;
 	u32 fp_offset;
@@ -293,19 +272,22 @@ void VI::updateScreen()
 	s32 projMatrix_id = -1;
 	s32 modelViewMatrix_id = -1;
 	s32 vertexPosition_id = -1;
+	s32 vertexColor0_id = -1;
 	s32 vertexTexcoord_id = -1;
 	s32 textureUnit_id = -1;
+	s32 mode_id = -1;
 
 	void *vp_ucode = NULL;
-	rsxVertexProgram *vpo = (rsxVertexProgram*)texture_shader_vpo;
+	rsxVertexProgram *vpo = (rsxVertexProgram*)combined_shader_vpo;
 
 	void *fp_ucode = NULL;
-	rsxFragmentProgram *fpo = (rsxFragmentProgram*)texture_shader_fpo;
+	rsxFragmentProgram *fpo = (rsxFragmentProgram*)combined_shader_fpo;
 
 	vp_ucode = rsxVertexProgramGetUCode(vpo);
 	projMatrix_id = rsxVertexProgramGetConst(vpo,"projMatrix");
 	modelViewMatrix_id = rsxVertexProgramGetConst(vpo,"modelViewMatrix");
 	vertexPosition_id = rsxVertexProgramGetAttrib(vpo,"vertexPosition");
+	vertexColor0_id = rsxVertexProgramGetAttrib(vpo,"vertexColor");
 	vertexTexcoord_id = rsxVertexProgramGetAttrib(vpo,"vertexTexcoord");
 
 	fp_ucode = rsxFragmentProgramGetUCode(fpo,&fpsize);
@@ -313,6 +295,7 @@ void VI::updateScreen()
 	memcpy(fp_buffer,fp_ucode,fpsize);
 	rsxAddressToOffset(fp_buffer,&fp_offset);
 
+	mode_id = rsxFragmentProgramGetConst(fpo,"mode");
 	textureUnit_id = rsxFragmentProgramGetAttrib(fpo,"texture");
 
 	for (int j=0; j<480; j++)
@@ -403,12 +386,12 @@ void VI::updateScreen()
 	rsxSetFrontFace(context,GCM_FRONTFACE_CCW);
 
 	//inline const Matrix4 Matrix4::orthographic( float left, float right, float bottom, float top, float zNear, float zFar )
-	Matrix4 P,viewMatrix,modelMatrix,modelViewMatrix;
+	Matrix4 projMatrix,viewMatrix,modelMatrix,modelViewMatrix;
 	Point3 eye_pos = Point3(0.0f,0.0f,20.0f);
 	Point3 eye_dir = Point3(0.0f,0.0f,0.0f);
 	Vector3 up_vec = Vector3(0.0f,1.0f,0.0f);
 
-	P = transpose(Matrix4::orthographic(0.0f, 640.0f, 0.0f, 480.0f, 0.0f, 1.0f ));
+	projMatrix = transpose(Matrix4::orthographic(0.0f, 640.0f, 480.0f, 0.0f, 0.0f, 1.0f ));
 	viewMatrix = Matrix4::lookAt(eye_pos,eye_dir,up_vec);
 	modelMatrix = Matrix4::identity();
 	modelViewMatrix = viewMatrix*modelMatrix;
@@ -425,13 +408,18 @@ void VI::updateScreen()
 
 	rsxZControl(context,0,1,1);
 
+	//Turn off Blending
+	rsxSetBlendEnable(context, GCM_FALSE);
+
 	for(int i=0;i<8;i++)
 		rsxSetViewportClip(context,i,display_width,display_height);
 
 	rsxLoadVertexProgram(context,vpo,vp_ucode);
-	rsxSetVertexProgramParameter(context,vpo,projMatrix_id,(float*)&P);
+	rsxSetVertexProgramParameter(context,vpo,projMatrix_id,(float*)&projMatrix);
 	rsxSetVertexProgramParameter(context,vpo,modelViewMatrix_id,(float*)&modelViewMatrix);
 
+	float shader_mode = 1; //SHADER_PASSTEX
+	rsxSetFragmentProgramParameter(context,fpo,mode_id,&shader_mode,fp_offset);
 	rsxLoadFragmentProgramLocation(context,fpo,fp_offset,GCM_LOCATION_RSX);
 
 	rsxSetUserClipPlaneControl(context,GCM_USER_CLIP_PLANE_DISABLE,
@@ -444,17 +432,21 @@ void VI::updateScreen()
 	//void rsxDrawVertexBegin(gcmContextData *context,u32 type);
 	rsxDrawVertexBegin(context,GCM_TYPE_QUADS);
 
-		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 0.0f, 0.0f);
-		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 1.0f);
-
-		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 0.0f, 0.0f);
-		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 0.0f);
-
-		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 480.0f, 0.0f);
+		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f, 0.0f);
+		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 0.0f, 0.0f);
 
-		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 480.0f, 0.0f);
+		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
+		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 0.0f);
+		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 0.0f, 0.0f);
+
+		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
+		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 1.0f);
+		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 480.0f, 0.0f);
+
+		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f, 1.0f);
+		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 480.0f, 0.0f);
 
 	rsxDrawVertexEnd(context);
 
@@ -463,8 +455,9 @@ void VI::updateScreen()
 	//free RSX buffers
 	if (fp_buffer) rsxFree(fp_buffer);
 
-/*
-   //N64 Framebuffer is in RGB5A1 format. Write it directly to the current RSX framebuffer.
+#if 0
+	//PS3 - Copy N64 framebuffer directly to RSX framebuffer using the PPU.
+	//N64 Framebuffer is in RGB5A1 format. Write it directly to the current RSX framebuffer.
 	u32* buffer = color_buffer[curr_fb];
 	int x_offset = (res.width - 640)/2;
 	int y_offset = (res.height - 480)/2;
@@ -484,15 +477,48 @@ void VI::updateScreen()
 		}
 	}
 	flip();
-*/
-/*
+#endif
+
+#else //PS3
+	//Implementation for GC/Wii
+	//N64 Framebuffer is in RGB5A1 format, so shift by 1 and retile.
+	for (int j=0; j<480; j+=4)
+	{
+		for (int i=0; i<640; i+=4)
+		{
+			for (int jj=0; jj<4; jj++)
+			{
+				if (j+jj < miny || j+jj > maxy)
+				{
+					FBtex[ind++] = 0;
+					FBtex[ind++] = 0;
+					FBtex[ind++] = 0;
+					FBtex[ind++] = 0;
+				}
+				else
+				{
+					px = scale_x*i;
+					py = scale_y*(j+jj);
+					for (int ii=0; ii<4; ii++)
+					{
+						if (i+ii < minx || i+ii > maxx)
+							FBtex[ind++] = 0;
+						else
+							FBtex[ind++] = 0x8000 | (im16[((int)py*(*gfxInfo.VI_WIDTH_REG)+(int)px)]>>1);
+						px += scale_x;
+					}
+				}
+			}
+		}
+	}
+
 	GX_SetCopyClear ((GXColor){0,0,0,255}, 0xFFFFFF);
 	GX_CopyDisp (vi->getScreenPointer(), GX_TRUE);	//clear the EFB before executing new Dlist
-	GX_DrawDone ();*/
+	GX_DrawDone ();
 	vi->updateDEBUG();
 
 	//Initialize texture
-/*	GX_InitTexObj(&FBtexObj, FBtex, 640, 480, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE); 
+	GX_InitTexObj(&FBtexObj, FBtex, 640, 480, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE); 
 	DCFlushRange(FBtex, 640*480*2);
 	GX_InvalidateTexAll();
 	GX_LoadTexObj(&FBtexObj, GX_TEXMAP0);
@@ -541,11 +567,12 @@ void VI::updateScreen()
 		GX_TexCoord2f32( 0.0f, 1.0f );
 	GX_End();
 	GX_DrawDone();
-*/
+
    //printf(" done.\nBlitting...");
    //fflush(stdout);
-//   blit();
+   blit();
    //printf(" done.\n");
+#endif //!PS3
 }
 
 void VI::debug_plot(int x, int y, int c)

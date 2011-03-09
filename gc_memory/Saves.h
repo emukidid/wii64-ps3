@@ -24,6 +24,7 @@
 #ifndef SAVES_H
 #define SAVES_H
 
+#include "../main/winlnxdefs.h"
 #include "../fileBrowser/fileBrowser.h"
 
 /*
