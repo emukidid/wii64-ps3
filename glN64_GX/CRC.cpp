@@ -58,7 +58,7 @@ DWORD CRC_Calculate( DWORD crc, void *buffer, DWORD count )
 #ifndef _BIG_ENDIAN
 		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *p++];
 #else // !_BIG_ENDIAN -> Big Endian fix - necessary for Ucode detection.
-		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *(BYTE*)((int)p++ ^ 3)]; //This fixes the endian problem for uc_crc
+		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *(BYTE*)((long)p++ ^ 3)]; //This fixes the endian problem for uc_crc
 #endif // _BIG_ENDIAN
 
     return crc ^ orig;
@@ -78,8 +78,8 @@ DWORD CRC_CalculatePalette( DWORD crc, void *buffer, DWORD count )
 
 		p += 6;
 #else // !_BIG_ENDIAN -> Big Endian fix  
-		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *(BYTE*)((int)p + 1)];
-		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *(BYTE*)((int)p)];
+		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *(BYTE*)((long)p + 1)];
+		crc = (crc >> 8) ^ CRCTable[(crc & 0xFF) ^ *(BYTE*)((long)p)];
 
 		p += 8;
 #endif // _BIG_ENDIAN

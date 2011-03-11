@@ -9,16 +9,17 @@
  *
 **/
 
-#ifndef __GX__
+#ifdef PS3
+#elif defined(__GX__)
+#include <gccore.h>
+#else //__GX__
 #include <features.h>
 #include <dlfcn.h>
 #include <unistd.h>
 #include "SDL.h"
 #include <errno.h>
 #include <gtk/gtk.h>
-#else // !__GX__
-#include <gccore.h>
-#endif // __GX__
+#endif // !__GX__
 
 #include "../main/winlnxdefs.h"
 #include <string.h>
@@ -30,12 +31,12 @@
 #include "Textures.h"
 #include "OpenGL.h"
 
-#ifdef __GX__
-char glN64_useFrameBufferTextures = 0;
-char glN64_use2xSaiTextures = 0;
-#endif // __GX__
+#if defined(__GX__) || defined(PS3)
+extern char glN64_useFrameBufferTextures;
+extern char glN64_use2xSaiTextures;
+#endif // __GX__ PS3
 
-#ifndef __GX__ // this eliminates several functions
+#if !(defined(__GX__)||defined(PS3)) // this eliminates several functions
 static const char *pluginDir = 0;
 static GtkWidget *configWindow = NULL;
 //static GtkWidget *bitdepthCombo[2], *resolutionCombo[2];
@@ -402,22 +403,49 @@ static int Config_CreateWindow()
 
 	return 0;
 }
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 void Config_LoadConfig()
 {
 	static int loaded = 0;
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	char line[2000];
 	FILE *f;
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	if (loaded)
 		return;
 
 	loaded = 1;
 
-#ifndef __GX__
+#ifdef PS3
+	//TODO: adjust to correct window dimensions?
+	// GCM configuration
+	OGL.fullscreenWidth = 640;
+	OGL.fullscreenHeight = 480;
+	OGL.windowedWidth = 640;
+	OGL.windowedHeight = 480;
+	OGL.forceBilinear = 0;
+	OGL.enable2xSaI = glN64_use2xSaiTextures;
+	OGL.fog = 1;
+	OGL.textureBitDepth = 1; // normal (16 & 32 bits)
+	OGL.frameBufferTextures = glN64_useFrameBufferTextures;
+	OGL.usePolygonStipple = 0;
+	cache.maxBytes = 32 * 1048576;	
+#elif defined(__GX__)
+	// GX configuration
+	OGL.fullscreenWidth = 640;
+	OGL.fullscreenHeight = 480;
+	OGL.windowedWidth = 640;
+	OGL.windowedHeight = 480;
+	OGL.forceBilinear = 0;
+	OGL.enable2xSaI = glN64_use2xSaiTextures;
+	OGL.fog = 1;
+	OGL.textureBitDepth = 1; // normal (16 & 32 bits)
+	OGL.frameBufferTextures = glN64_useFrameBufferTextures;
+	OGL.usePolygonStipple = 0;
+	cache.maxBytes = GX_TEXTURE_CACHE_SIZE;
+#else //__GX__
 	if (pluginDir == 0)
 		pluginDir = GetPluginDir();
 
@@ -435,22 +463,9 @@ void Config_LoadConfig()
 	OGL.frameBufferTextures = 0;
 	OGL.usePolygonStipple = 0;
 	cache.maxBytes = 32 * 1048576;	
-#else //!__GX__
-	// GX configuration
-	OGL.fullscreenWidth = 640;
-	OGL.fullscreenHeight = 480;
-	OGL.windowedWidth = 640;
-	OGL.windowedHeight = 480;
-	OGL.forceBilinear = 0;
-	OGL.enable2xSaI = glN64_use2xSaiTextures;
-	OGL.fog = 1;
-	OGL.textureBitDepth = 1; // normal (16 & 32 bits)
-	OGL.frameBufferTextures = glN64_useFrameBufferTextures;
-	OGL.usePolygonStipple = 0;
-	cache.maxBytes = GX_TEXTURE_CACHE_SIZE;
-#endif // __GX__
+#endif // !__GX__
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	// read configuration
 	char filename[PATH_MAX];
 	snprintf( filename, PATH_MAX, "%s/glN64.conf", pluginDir );
@@ -540,17 +555,17 @@ void Config_LoadConfig()
 	}
 
 	fclose( f );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 }
 
 void Config_DoConfig()
 {
 	Config_LoadConfig();
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	if (!configWindow)
 		Config_CreateWindow();
 
 	gtk_widget_show_all( configWindow );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 }

@@ -41,13 +41,14 @@
 
 VIInfo VI;
 
+
+#ifdef __GX__
 extern GXRModeObj *vmode, *rmode;
 extern int GX_xfb_offset;
 
-#ifdef __GX__
-char printToScreen;
-char showFPSonScreen;
-char renderCpuFramebuffer;
+extern char printToScreen;
+extern char showFPSonScreen;
+extern char renderCpuFramebuffer;
 
 /*bool updateDEBUGflag;
 bool new_fb;
@@ -79,49 +80,26 @@ void VI_UpdateSize()
 
 void VI_UpdateScreen()
 {
-#ifndef __GX__
-	glFinish();
+#ifdef PS3
+	//TODO: Implement in GCM
+//	flip();
+//	glFinish();
 
 	if (OGL.frameBufferTextures)
 	{
-		FrameBuffer *current = FrameBuffer_FindBuffer( *REG.VI_ORIGIN );
-
-		if ((*REG.VI_ORIGIN != VI.lastOrigin) || ((current) && current->changed))
-		{
-			if (gDP.colorImage.changed)
-			{
-				FrameBuffer_SaveBuffer( gDP.colorImage.address, gDP.colorImage.size, gDP.colorImage.width, gDP.colorImage.height );
-				gDP.colorImage.changed = FALSE;
-			}
-
-			FrameBuffer_RenderBuffer( *REG.VI_ORIGIN );
-
-			gDP.colorImage.changed = FALSE;
-			VI.lastOrigin = *REG.VI_ORIGIN;
-#ifdef DEBUG
-			while (Debug.paused && !Debug.step);
-			Debug.step = FALSE;
-#endif
-		}
 	}
 	else
 	{
 		if (gSP.changed & CHANGED_COLORBUFFER)
 		{
-#ifndef __LINUX__
-			SwapBuffers( OGL.hDC );
-#else
-			OGL_SwapBuffers();
-#endif
+//			dbg_printf("VI_UpdateScreen -> flip\r\n");
+//			rsxFinish(context, OGL.finish_ref++);
+			flip();
 			gSP.changed &= ~CHANGED_COLORBUFFER;
-#ifdef DEBUG
-			while (Debug.paused && !Debug.step);
-			Debug.step = FALSE;
-#endif
 		}
 	}
-	glFinish();
-#else // !__GX__
+//	glFinish();
+#elif defined(__GX__)
 	if (renderCpuFramebuffer)
 	{
 		//Only render N64 framebuffer in RDRAM and not EFB
@@ -193,7 +171,49 @@ void VI_UpdateScreen()
 			gSP.changed &= ~CHANGED_COLORBUFFER;
 		}
 	}
-#endif // __GX__
+#else // __GX__
+	glFinish();
+
+	if (OGL.frameBufferTextures)
+	{
+		FrameBuffer *current = FrameBuffer_FindBuffer( *REG.VI_ORIGIN );
+
+		if ((*REG.VI_ORIGIN != VI.lastOrigin) || ((current) && current->changed))
+		{
+			if (gDP.colorImage.changed)
+			{
+				FrameBuffer_SaveBuffer( gDP.colorImage.address, gDP.colorImage.size, gDP.colorImage.width, gDP.colorImage.height );
+				gDP.colorImage.changed = FALSE;
+			}
+
+			FrameBuffer_RenderBuffer( *REG.VI_ORIGIN );
+
+			gDP.colorImage.changed = FALSE;
+			VI.lastOrigin = *REG.VI_ORIGIN;
+#ifdef DEBUG
+			while (Debug.paused && !Debug.step);
+			Debug.step = FALSE;
+#endif
+		}
+	}
+	else
+	{
+		if (gSP.changed & CHANGED_COLORBUFFER)
+		{
+#ifndef __LINUX__
+			SwapBuffers( OGL.hDC );
+#else
+			OGL_SwapBuffers();
+#endif
+			gSP.changed &= ~CHANGED_COLORBUFFER;
+#ifdef DEBUG
+			while (Debug.paused && !Debug.step);
+			Debug.step = FALSE;
+#endif
+		}
+	}
+	glFinish();
+#endif // !__GX__
 
 }
 

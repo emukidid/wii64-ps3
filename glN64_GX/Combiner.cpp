@@ -23,13 +23,16 @@
 #endif // __LINUX__
 #include "OpenGL.h"
 #include "Combiner.h"
-#ifndef __GX__
+#ifdef PS3
+# include "RSX_combiner.h"
+# include "texture_env.h"
+#elif defined(__GX__)
+# include "TEV_combiner.h"
+#else // __GX__
 # include "NV_register_combiners.h"
 # include "texture_env_combine.h"
 # include "texture_env.h"
-#else // !__GX__
-# include "TEV_combiner.h"
-#endif // __GX__
+#endif // !__GX__
 #include "Debug.h"
 #include "gDP.h"
 
@@ -37,21 +40,41 @@ CombinerInfo combiner;
 
 void Combiner_Init()
 {
-#ifndef __GX__
+#ifdef PS3
+	combiner.compiler = TEXTURE_ENV;	//Use simple combining. (removed from Makefile)
+//	combiner.compiler = RSX_COMBINE;	//Use GCM combiner designed by sepp256.
+#elif defined(__GX__)
+//	combiner.compiler = TEXTURE_ENV;	//Use simple combining. (removed from Makefile)
+	combiner.compiler = TEV_COMBINE;	//Use GX combiner designed by sepp256.
+#else // __GX__
 	if (OGL.NV_register_combiners)
 		combiner.compiler = NV_REGISTER_COMBINERS;
 	else if (OGL.EXT_texture_env_combine || OGL.ARB_texture_env_combine)
 		combiner.compiler = TEXTURE_ENV_COMBINE;
 	else
 		combiner.compiler = TEXTURE_ENV;
-#else // !__GX__
-//	combiner.compiler = TEXTURE_ENV;	//Use simple combining. (removed from Makefile)
-	combiner.compiler = TEV_COMBINE;	//Use GX combiner designed by sepp256.
-#endif // __GX__
+#endif // !__GX__
 
 	switch (combiner.compiler)
 	{
-#ifndef __GX__
+#ifdef PS3
+/*		case RSX_COMBINE:
+#ifdef SHOW_DEBUG
+			DEBUG_print((char*)"Combiner: RSX_Combiner",DBG_CCINFO);
+#endif
+			Init_RSX_combine();
+			break;*/
+		case TEXTURE_ENV:
+			Init_texture_env();
+			break;
+#elif defined(__GX__)
+		case TEV_COMBINE:
+#ifdef SHOW_DEBUG
+			DEBUG_print((char*)"Combiner: TEV_Combiner",DBG_CCINFO);
+#endif
+			Init_TEV_combine();
+			break;
+#else // __GX__
 		case TEXTURE_ENV_COMBINE:
 			Init_texture_env_combine();
 			break;
@@ -62,14 +85,7 @@ void Combiner_Init()
 		case TEXTURE_ENV:
 			Init_texture_env();
 			break;
-#else // !__GX__
-		case TEV_COMBINE:
-#ifdef SHOW_DEBUG
-			DEBUG_print((char*)"Combiner: TEV_Combiner",DBG_CCINFO);
-#endif
-			Init_TEV_combine();
-			break;
-#endif // __GX__
+#endif // !__GX__
 	}
 	combiner.root = NULL;
 }
@@ -78,7 +94,15 @@ void Combiner_UpdateCombineColors()
 {
 	switch (combiner.compiler)
 	{
-#ifndef __GX__
+#ifdef PS3
+/*		case RSX_COMBINE:
+			Update_RSX_combine_Colors( (RSXCombiner*)combiner.current->compiled );
+			break;*/
+#elif defined(__GX__)
+		case TEV_COMBINE:
+			Update_TEV_combine_Colors( (TEVCombiner*)combiner.current->compiled );
+			break;
+#else // __GX__
 		case TEXTURE_ENV_COMBINE:
 			Update_texture_env_combine_Colors( (TexEnvCombiner*)combiner.current->compiled );
 			break;
@@ -86,11 +110,7 @@ void Combiner_UpdateCombineColors()
 		case NV_REGISTER_COMBINERS:
 			Update_NV_register_combiners_Colors( (RegisterCombiners*)combiner.current->compiled );
 			break;
-#else // !__GX__
-		case TEV_COMBINE:
-			Update_TEV_combine_Colors( (TEVCombiner*)combiner.current->compiled );
-			break;
-#endif // __GX__
+#endif // !__GX__
 	}
 
 	gDP.changed &= ~CHANGED_COMBINE_COLORS;
@@ -341,7 +361,18 @@ CachedCombiner *Combiner_Compile( u64 mux )
 	// Send the simplified combiner to the hardware-specific compiler
 	switch (combiner.compiler)
 	{
-#ifndef __GX__
+#ifdef PS3
+/*		case RSX_COMBINE:
+			cached->compiled = (void*)Compile_RSX_combine( &color, &alpha );
+			break;*/
+		case TEXTURE_ENV:
+			cached->compiled = (void*)Compile_texture_env( &color, &alpha );
+			break;
+#elif defined(__GX__)
+		case TEV_COMBINE:
+			cached->compiled = (void*)Compile_TEV_combine( &color, &alpha );
+			break;
+#else // __GX__
 		case TEXTURE_ENV_COMBINE:
 			cached->compiled = (void*)Compile_texture_env_combine( &color, &alpha );
 			break;
@@ -353,11 +384,7 @@ CachedCombiner *Combiner_Compile( u64 mux )
 		case TEXTURE_ENV:
 			cached->compiled = (void*)Compile_texture_env( &color, &alpha );
 			break;
-#else // !__GX__
-		case TEV_COMBINE:
-			cached->compiled = (void*)Compile_TEV_combine( &color, &alpha );
-			break;
-#endif // __GX__
+#endif // !__GX__
 	}
 
 #if 0 //def DBGCOMBINE
@@ -400,30 +427,30 @@ void Combiner_Destroy()
 		combiner.root = NULL;
 	}
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	for (int i = 0; i < OGL.maxTextureUnits; i++)
 	{
 		glActiveTextureARB( GL_TEXTURE0_ARB + i );
 		glDisable( GL_TEXTURE_2D );
 	}
-#endif // !__GX__
+#endif // !__GX__ !PS3
 }
 
 void Combiner_BeginTextureUpdate()
 {
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	switch (combiner.compiler)
 	{
 		case TEXTURE_ENV_COMBINE:
 			BeginTextureUpdate_texture_env_combine();
 			break;
 	}
-#endif // !__GX__
+#endif // !__GX__ !PS3
 }
 
 void Combiner_EndTextureUpdate()
 {
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	switch (combiner.compiler)
 	{
 		case TEXTURE_ENV_COMBINE:
@@ -431,7 +458,7 @@ void Combiner_EndTextureUpdate()
 			Set_texture_env_combine( (TexEnvCombiner*)combiner.current->compiled );
 			break;
 	}
-#endif // !__GX__
+#endif // !__GX__ !PS3
 }
 
 DWORD64 Combiner_EncodeCombineMode( WORD saRGB0, WORD sbRGB0, WORD mRGB0, WORD aRGB0,
@@ -503,7 +530,18 @@ void Combiner_SetCombineStates()
 {
 	switch (combiner.compiler)
 	{
-#ifndef __GX__
+#ifdef PS3
+/*		case RSX_COMBINE:
+			Set_RSX_combine( (RSXCombiner*)combiner.current->compiled );
+			break;*/
+		case TEXTURE_ENV:
+			Set_texture_env( (TexEnv*)combiner.current->compiled );
+			break;
+#elif defined(__GX__)
+		case TEV_COMBINE:
+			Set_TEV_combine( (TEVCombiner*)combiner.current->compiled );
+			break;
+#else // __GX__
 		case TEXTURE_ENV_COMBINE:
 			Set_texture_env_combine( (TexEnvCombiner*)combiner.current->compiled );
 			break;
@@ -515,11 +553,7 @@ void Combiner_SetCombineStates()
 		case TEXTURE_ENV:
 			Set_texture_env( (TexEnv*)combiner.current->compiled );
 			break;
-#else // !__GX__
-		case TEV_COMBINE:
-			Set_TEV_combine( (TEVCombiner*)combiner.current->compiled );
-			break;
-#endif // __GX__
+#endif // !__GX__
 	}
 }
 

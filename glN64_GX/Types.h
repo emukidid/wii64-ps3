@@ -9,7 +9,7 @@
  *
 **/
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 #ifndef TYPES_H
 #define TYPES_H
 

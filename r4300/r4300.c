@@ -184,10 +184,10 @@ void update_count()
 	//sprintf(txtbuffer, "trace: addr = 0x%08x\n", r4300.pc);
 	Count = Count + (r4300.pc - r4300.last_pc) / 2;
 	r4300.last_pc = r4300.pc;
-	if(checkCallback > 250) {
+/*	if(checkCallback > 250) {
 		sysUtilCheckCallback();
 		checkCallback = 0;
-	}
+	}*/
 	checkCallback++;
 }
 

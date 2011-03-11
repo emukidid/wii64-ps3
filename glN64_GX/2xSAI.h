@@ -13,6 +13,7 @@
 #ifndef _2XSAI_H
 #define _2XSAI_H
 #include "Types.h"
+#include "OpenGL.h"
 
 #define COLORDEPTH32
 #ifdef COLORDEPTH32

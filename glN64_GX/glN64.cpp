@@ -18,8 +18,12 @@
 # include <string.h>
 #endif
 
-#ifdef __GX__
+#if defined(__GX__)||defined(PS3)
 #include "GFXPlugin.h"
+#define MAINDEF		//Ensures only one copy of MicrocodeTypes and Combiner tables
+#endif //__GX__ PS3
+
+#ifdef __GX__
 #include <gccore.h>
 #include <stdio.h>
 #include "../gui/DEBUG.h"
@@ -65,7 +69,9 @@ void gfx_set_fb(unsigned int* fb1, unsigned int* fb2){
 void showLoadProgress(float percent){
 	VI_GX_showLoadProg(percent);
 }
+#endif // __GX__
 
+#if defined(__GX__)||defined(PS3)
 void gfx_set_window(int x, int y, int width, int height){
 	//Note: this will break FB tex for x|y < 0
 	OGL.GXorigX = x;
@@ -73,7 +79,7 @@ void gfx_set_window(int x, int y, int width, int height){
 	OGL.GXwidth = width;
 	OGL.GXheight = height;
 }
-#endif // __GX__
+#endif // __GX__ PS3
 
 #ifndef __LINUX__
 LONG		windowedStyle;
@@ -103,9 +109,9 @@ void
 _init( void )
 {
 	Config_LoadConfig();
-# ifndef __GX__
+# if !(defined(__GX__)||defined(PS3))
 	OGL.hScreen = NULL;
-# endif // !_GX__
+# endif // !_GX__ !PS3
 # ifdef RSPTHREAD
 	RSP.thread = NULL;
 # endif
@@ -195,9 +201,9 @@ EXPORT void CALL ChangeWindow (void)
 	WaitForSingleObject( RSP.threadFinished, INFINITE );
 #else // RSPTHREAD
 # ifdef __LINUX__
-#  ifndef __GX__
+#  if !(defined(__GX__)||defined(PS3))
 	SDL_WM_ToggleFullScreen( OGL.hScreen );
-#  endif // !__GX__
+#  endif // !__GX__ !PS3
 # endif // __LINUX__
 #endif // !RSPTHREAD
 }
@@ -208,13 +214,13 @@ EXPORT void CALL CloseDLL (void)
 
 EXPORT void CALL DllAbout ( HWND hParent )
 {
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 #ifndef __LINUX__
 	MessageBox( hParent, "glN64 v0.4 by Orkin\n\nWebsite: http://gln64.emulation64.com/\n\nThanks to Clements, Rice, Gonetz, Malcolm, Dave2001, cryhlove, icepir8, zilmar, Azimer, and StrmnNrmn", pluginName, MB_OK | MB_ICONINFORMATION );
 #else
 	puts( "glN64 v0.4 by Orkin\nWebsite: http://gln64.emulation64.com/\n\nThanks to Clements, Rice, Gonetz, Malcolm, Dave2001, cryhlove, icepir8, zilmar, Azimer, and StrmnNrmn\nported by blight" );
 #endif
-#endif // !__GX__
+#endif // !__GX__ !PS3
 }
 
 EXPORT void CALL DllConfig ( HWND hParent )
@@ -261,9 +267,9 @@ EXPORT BOOL CALL InitiateGFX (GFX_INFO Gfx_Info)
 	EnumChildWindows( hWnd, FindToolBarProc,0 );
 #else // !__LINUX__
 	Config_LoadConfig();
-# ifndef __GX__
+# if !(defined(__GX__)||defined(PS3))
 	OGL.hScreen = NULL;
-# endif // !__GX__
+# endif // !__GX__ !PS3
 # ifdef RSPTHREAD
 	RSP.thread = NULL;
 # endif

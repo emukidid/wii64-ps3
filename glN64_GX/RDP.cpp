@@ -9,7 +9,9 @@
  *
 **/
 
-#ifdef __GX__
+#ifdef PS3
+#include "../main/winlnxdefs.h"
+#elif defined(__GX__)
 #include <gccore.h>
 #endif // __GX__
 

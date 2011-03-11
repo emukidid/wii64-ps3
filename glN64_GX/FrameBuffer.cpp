@@ -208,16 +208,18 @@ void FrameBuffer_SaveBuffer( u32 address, u16 size, u16 width, u16 height )
 				FrameBuffer_Remove( current );
 				break;
 			}
-#ifndef __GX__
-			glBindTexture( GL_TEXTURE_2D, current->texture->glName );
-			glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, OGL.height - current->texture->height + OGL.heightOffset, current->texture->width, current->texture->height );
-#else // !__GX__
+#ifdef PS3
+			//TODO: Implement for GCM
+#elif defined(__GX__)
 			//Note: texture realWidth and realHeight should be multiple of 2!
 			GX_SetTexCopySrc(OGL.GXorigX, OGL.GXorigY,(u16) current->texture->realWidth,(u16) current->texture->realHeight);
 			GX_SetTexCopyDst((u16) current->texture->realWidth,(u16) current->texture->realHeight, current->texture->GXtexfmt, GX_FALSE);
 			if (current->texture->GXtexture) GX_CopyTex(current->texture->GXtexture, GX_FALSE);
 			GX_PixModeSync();
-#endif // __GX__
+#else // __GX__
+			glBindTexture( GL_TEXTURE_2D, current->texture->glName );
+			glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 0, OGL.height - current->texture->height + OGL.heightOffset, current->texture->width, current->texture->height );
+#endif // !__GX__
 
 			*(u32*)&RDRAM[current->startAddress] = current->startAddress;
 
@@ -319,16 +321,18 @@ void FrameBuffer_SaveBuffer( u32 address, u16 size, u16 width, u16 height )
 #endif //__GX__
 	cache.cachedBytes += current->texture->textureBytes;
 
-#ifndef __GX__
-	glBindTexture( GL_TEXTURE_2D, current->texture->glName );
-	glCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 0, OGL.height - current->texture->height + OGL.heightOffset, current->texture->realWidth, current->texture->realHeight, 0 );
-#else // !__GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+#elif defined(__GX__)
 	//Note: texture realWidth and realHeight should be multiple of 2!
 	GX_SetTexCopySrc((u16) OGL.GXorigX, (u16) OGL.GXorigY,(u16) current->texture->realWidth,(u16) current->texture->realHeight);
 	GX_SetTexCopyDst((u16) current->texture->realWidth,(u16) current->texture->realHeight, current->texture->GXtexfmt, GX_FALSE);
 	if (current->texture->GXtexture) GX_CopyTex(current->texture->GXtexture, GX_FALSE);
 	GX_PixModeSync();
-#endif // __GX__
+#else // __GX__
+	glBindTexture( GL_TEXTURE_2D, current->texture->glName );
+	glCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 0, OGL.height - current->texture->height + OGL.heightOffset, current->texture->realWidth, current->texture->realHeight, 0 );
+#endif // !__GX__
 
 	*(u32*)&RDRAM[current->startAddress] = current->startAddress;
 
@@ -346,9 +350,9 @@ void FrameBuffer_RenderBuffer( u32 address )
 		if ((current->startAddress <= address) &&
 			(current->endAddress >= address))
 		{
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 			glPushAttrib( GL_ENABLE_BIT | GL_VIEWPORT_BIT );
-#endif // __GX__
+#endif // !__GX__ !PS3
 
 			Combiner_BeginTextureUpdate();
 			TextureCache_ActivateTexture( 0, current->texture );
@@ -368,48 +372,9 @@ void FrameBuffer_RenderBuffer( u32 address )
 			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 			glEnable( GL_TEXTURE_2D );*/
 
-#ifndef __GX__
-			glDisable( GL_BLEND );
-			glDisable( GL_ALPHA_TEST );
-			glDisable( GL_DEPTH_TEST );
-			glDisable( GL_CULL_FACE );
-			glDisable( GL_POLYGON_OFFSET_FILL );
-//			glDisable( GL_REGISTER_COMBINERS_NV );
-			glDisable( GL_FOG );
-
-			glMatrixMode( GL_PROJECTION );
-			glLoadIdentity();
- 			glOrtho( 0, OGL.width, 0, OGL.height, -1.0f, 1.0f );
-			glViewport( 0, OGL.heightOffset, OGL.width, OGL.height );
-			glDisable( GL_SCISSOR_TEST );
-
-			float u1, v1;
-
-			u1 = (float)current->texture->width / (float)current->texture->realWidth;
-			v1 = (float)current->texture->height / (float)current->texture->realHeight;
-
-			glDrawBuffer( GL_FRONT );
-			glBegin(GL_QUADS);
- 				glTexCoord2f( 0.0f, 0.0f );
-				glVertex2f( 0.0f, OGL.height - current->texture->height );
-
-				glTexCoord2f( 0.0f, v1 );
-				glVertex2f( 0.0f, OGL.height );
-
- 				glTexCoord2f( u1,  v1 );
-				glVertex2f( current->texture->width, OGL.height );
-
- 				glTexCoord2f( u1, 0.0f );
-				glVertex2f( current->texture->width, OGL.height - current->texture->height );
-			glEnd();
-			glDrawBuffer( GL_BACK );
-
-/*			glEnable( GL_TEXTURE_2D );
-			glActiveTextureARB( GL_TEXTURE0_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );*/
-			glPopAttrib();
-#else // !__GX__
-
+#ifdef PS3
+			//TODO: Implement for GCM
+#elif defined(__GX__)
 			GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); 
 			GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
 			GX_SetZMode(GX_DISABLE,GX_ALWAYS,GX_FALSE);
@@ -454,8 +419,47 @@ void FrameBuffer_RenderBuffer( u32 address )
 //			glDrawBuffer( GL_BACK );
 
 			OGL.GXupdateMtx = true;
+#else //__GX__
+			glDisable( GL_BLEND );
+			glDisable( GL_ALPHA_TEST );
+			glDisable( GL_DEPTH_TEST );
+			glDisable( GL_CULL_FACE );
+			glDisable( GL_POLYGON_OFFSET_FILL );
+//			glDisable( GL_REGISTER_COMBINERS_NV );
+			glDisable( GL_FOG );
 
-#endif // __GX__
+			glMatrixMode( GL_PROJECTION );
+			glLoadIdentity();
+ 			glOrtho( 0, OGL.width, 0, OGL.height, -1.0f, 1.0f );
+			glViewport( 0, OGL.heightOffset, OGL.width, OGL.height );
+			glDisable( GL_SCISSOR_TEST );
+
+			float u1, v1;
+
+			u1 = (float)current->texture->width / (float)current->texture->realWidth;
+			v1 = (float)current->texture->height / (float)current->texture->realHeight;
+
+			glDrawBuffer( GL_FRONT );
+			glBegin(GL_QUADS);
+ 				glTexCoord2f( 0.0f, 0.0f );
+				glVertex2f( 0.0f, OGL.height - current->texture->height );
+
+				glTexCoord2f( 0.0f, v1 );
+				glVertex2f( 0.0f, OGL.height );
+
+ 				glTexCoord2f( u1,  v1 );
+				glVertex2f( current->texture->width, OGL.height );
+
+ 				glTexCoord2f( u1, 0.0f );
+				glVertex2f( current->texture->width, OGL.height - current->texture->height );
+			glEnd();
+			glDrawBuffer( GL_BACK );
+
+/*			glEnable( GL_TEXTURE_2D );
+			glActiveTextureARB( GL_TEXTURE0_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );*/
+			glPopAttrib();
+#endif // !__GX__
 
 			current->changed = FALSE;
 
@@ -483,9 +487,9 @@ void FrameBuffer_RestoreBuffer( u32 address, u16 size, u16 width )
 			(current->width == width) &&
 			(current->size == size))
 		{
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 			glPushAttrib( GL_ENABLE_BIT | GL_VIEWPORT_BIT );
-#endif // __GX__
+#endif // !__GX__ !PS3
 
 /*			if (OGL.ARB_multitexture)
 			{
@@ -505,46 +509,9 @@ void FrameBuffer_RestoreBuffer( u32 address, u16 size, u16 width )
 			TextureCache_ActivateTexture( 0, current->texture );
 			Combiner_SetCombine( EncodeCombineMode( 0, 0, 0, TEXEL0, 0, 0, 0, 1, 0, 0, 0, TEXEL0, 0, 0, 0, 1 ) );
 			
-#ifndef __GX__
-			glDisable( GL_BLEND );
-			glDisable( GL_ALPHA_TEST );
-			glDisable( GL_DEPTH_TEST );
-			glDisable( GL_SCISSOR_TEST );
-			glDisable( GL_CULL_FACE );
-			glDisable( GL_POLYGON_OFFSET_FILL );
-			//glDisable( GL_REGISTER_COMBINERS_NV );
-			glDisable( GL_FOG );
-//			glDepthMask( FALSE );
-
-			glMatrixMode( GL_PROJECTION );
-			glLoadIdentity();
- 			glOrtho( 0, OGL.width, 0, OGL.height, -1.0f, 1.0f );
-//			glOrtho( 0, RDP.width, RDP.height, 0, -1.0f, 1.0f );
-			glViewport( 0, OGL.heightOffset, OGL.width, OGL.height );
-
-			float u1, v1;
-
-			u1 = (float)current->texture->width / (float)current->texture->realWidth;
-			v1 = (float)current->texture->height / (float)current->texture->realHeight;
-
-			glBegin(GL_QUADS); 
- 				glTexCoord2f( 0.0f, 0.0f );
-				glVertex2f( 0.0f, OGL.height - current->texture->height );
-
-				glTexCoord2f( 0.0f, v1 );
-				glVertex2f( 0.0f, OGL.height );
-
- 				glTexCoord2f( u1,  v1 );
-				glVertex2f( current->texture->width, OGL.height );
-
- 				glTexCoord2f( u1, 0.0f );
-				glVertex2f( current->texture->width, OGL.height - current->texture->height );
-			glEnd();
-
-			glLoadIdentity();
-			glPopAttrib();
-#else //!__GX__
-
+#ifdef PS3
+			//TODO: Implement for GCM
+#elif defined(__GX__)
 			GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); 
 			GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
 			GX_SetZMode(GX_DISABLE,GX_ALWAYS,GX_FALSE);
@@ -585,8 +552,45 @@ void FrameBuffer_RestoreBuffer( u32 address, u16 size, u16 width )
 			GX_End();
 
 			OGL.GXupdateMtx = true;
+#else //__GX__
+			glDisable( GL_BLEND );
+			glDisable( GL_ALPHA_TEST );
+			glDisable( GL_DEPTH_TEST );
+			glDisable( GL_SCISSOR_TEST );
+			glDisable( GL_CULL_FACE );
+			glDisable( GL_POLYGON_OFFSET_FILL );
+			//glDisable( GL_REGISTER_COMBINERS_NV );
+			glDisable( GL_FOG );
+//			glDepthMask( FALSE );
 
-#endif // __GX__
+			glMatrixMode( GL_PROJECTION );
+			glLoadIdentity();
+ 			glOrtho( 0, OGL.width, 0, OGL.height, -1.0f, 1.0f );
+//			glOrtho( 0, RDP.width, RDP.height, 0, -1.0f, 1.0f );
+			glViewport( 0, OGL.heightOffset, OGL.width, OGL.height );
+
+			float u1, v1;
+
+			u1 = (float)current->texture->width / (float)current->texture->realWidth;
+			v1 = (float)current->texture->height / (float)current->texture->realHeight;
+
+			glBegin(GL_QUADS); 
+ 				glTexCoord2f( 0.0f, 0.0f );
+				glVertex2f( 0.0f, OGL.height - current->texture->height );
+
+				glTexCoord2f( 0.0f, v1 );
+				glVertex2f( 0.0f, OGL.height );
+
+ 				glTexCoord2f( u1,  v1 );
+				glVertex2f( current->texture->width, OGL.height );
+
+ 				glTexCoord2f( u1, 0.0f );
+				glVertex2f( current->texture->width, OGL.height - current->texture->height );
+			glEnd();
+
+			glLoadIdentity();
+			glPopAttrib();
+#endif // !__GX__
 
 			FrameBuffer_MoveToTop( current );
 

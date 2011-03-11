@@ -24,6 +24,7 @@
 #define NV_REGISTER_COMBINERS		2
 #define NV_TEXTURE_ENV_COMBINE4		3
 #define TEV_COMBINE					4
+#define RSX_COMBINE					5
 
 /*
  * G_SETCOMBINE: color combine modes

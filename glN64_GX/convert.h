@@ -430,7 +430,7 @@ Done:
 # else // X86_ASM
 	// ok
 	// copy leading bytes
-	int leadingBytes = ((int)src) & 3;
+	int leadingBytes = ((long)src) & 3;
 	if (leadingBytes != 0)
 	{
 		leadingBytes = 4-leadingBytes;
@@ -438,14 +438,14 @@ Done:
 			leadingBytes = numBytes;
 		numBytes -= leadingBytes;
 
-		src = (void *)((int)src ^ 3);
+		src = (void *)((long)src ^ 3);
 		for (int i = 0; i < leadingBytes; i++)
 		{
 			*(u8 *)(dest) = *(u8 *)(src);
-			dest = (void *)((int)dest+1);
-			src  = (void *)((int)src -1);
+			dest = (void *)((long)dest+1);
+			src  = (void *)((long)src -1);
 		}
-		src = (void *)((int)src+5);
+		src = (void *)((long)src+5);
 	}
 
 	// copy dwords
@@ -459,20 +459,20 @@ Done:
 		dword = ((dword & 0xFF)<<24)|(((dword>>8) & 0xFF)<<16)|(((dword>>16) & 0xFF)<<8)|((dword>>24)& 0xFF);
 #endif // _BIG_ENDIAN
 		*(u32 *)dest = dword;
-		dest = (void *)((int)dest+4);
-		src  = (void *)((int)src +4);
+		dest = (void *)((long)dest+4);
+		src  = (void *)((long)src +4);
 	}
 
 	// copy trailing bytes
 	int trailingBytes = numBytes & 3;
 	if (trailingBytes)
 	{
-		src = (void *)((int)src ^ 3);
+		src = (void *)((long)src ^ 3);
 		for (int i = 0; i < trailingBytes; i++)
 		{
 			*(u8 *)(dest) = *(u8 *)(src);
-			dest = (void *)((int)dest+1);
-			src  = (void *)((int)src -1);
+			dest = (void *)((long)dest+1);
+			src  = (void *)((long)src -1);
 		}
 	}
 # endif // !X86_ASM
@@ -519,11 +519,11 @@ DWordInterleaveLoop:
 	int tmp;
 	while( numDWords-- )
 	{
-		tmp = *(int *)((int)mem + 0);
-		*(int *)((int)mem + 0) = *(int *)((int)mem + 4);
-		*(int *)((int)mem + 4) = tmp;
+		tmp = *(int *)((long)mem + 0);
+		*(int *)((long)mem + 0) = *(int *)((long)mem + 4);
+		*(int *)((long)mem + 4) = tmp;
 
-		mem = (void *)((int)mem + 8);
+		mem = (void *)((long)mem + 8);
 	}
 # endif
 #endif // __LINUX__
@@ -586,15 +586,15 @@ QWordInterleaveLoop:
 	numDWords >>= 1; // qwords
 	while( numDWords-- )
 	{
-		tmp = *(int *)((int)mem + 0);
-		*(int *)((int)mem + 0) = *(int *)((int)mem + 8);
-		*(int *)((int)mem + 8) = tmp;
+		tmp = *(int *)((long)mem + 0);
+		*(int *)((long)mem + 0) = *(int *)((long)mem + 8);
+		*(int *)((long)mem + 8) = tmp;
 
-		tmp = *(int *)((int)mem + 4);
-		*(int *)((int)mem + 4) = *(int *)((int)mem + 12);
-		*(int *)((int)mem + 12) = tmp;
+		tmp = *(int *)((long)mem + 4);
+		*(int *)((long)mem + 4) = *(int *)((long)mem + 12);
+		*(int *)((long)mem + 12) = tmp;
 
-		mem = (void *)((int)mem + 16);
+		mem = (void *)((long)mem + 16);
 	}
 # endif
 #endif // __LINUX__

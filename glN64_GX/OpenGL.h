@@ -26,9 +26,9 @@
 #undef __WIN32__
 //# include <GL/gl.h>
 //# include <GL/glext.h>
-# ifndef __GX__
+# if !(defined(__GX__)||defined(PS3))
 # include "SDL.h"
-# endif // !_GX__
+# endif // !_GX__ !PS3
 #endif // __LINUX__
 
 #include "glATI.h"
@@ -37,6 +37,27 @@
 #define GXprojZScale		 0.5  //0.25 //0.5
 #define GXprojZOffset		-0.5 //-0.5
 #define GXpolyOffsetFactor	 5.0e-4 //Tweaked for co-planar polygons. Interestingly, Z resolution should be 5.96e-8.
+
+#ifdef PS3
+#include <rsx/rsx.h>
+#include <sysutil/video.h>
+#include "../main/rsxutil.h"
+
+extern "C" void dbg_printf(const char *fmt,...);
+
+#include <vectormath/cpp/vectormath_aos.h>
+using namespace Vectormath::Aos;
+
+#include "combined_shader_vpo.h"
+#include "combined_shader_fpo.h"
+
+enum Shaders
+{
+	SHADER_PASSTEX=1,
+	SHADER_PASSCOLOR,
+	SHADER_MODULATE
+};
+#endif // PS3
 
 struct GLVertex
 {
@@ -54,7 +75,7 @@ struct GLVertex
 
 struct GLInfo
 {
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 #ifndef __LINUX__
 	HGLRC	hRC, hPbufferRC;
 	HDC		hDC, hPbufferDC;
@@ -63,7 +84,7 @@ struct GLInfo
 #else
 	SDL_Surface *hScreen;
 #endif // __LINUX__
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	DWORD	fullscreenWidth, fullscreenHeight, fullscreenBits, fullscreenRefresh;
 	DWORD	width, height, windowedWidth, windowedHeight, heightOffset;
@@ -111,9 +132,35 @@ struct GLInfo
 
 	BYTE	combiner;
 
-#ifdef __GX__	//Variables specific to GX
+#ifdef PS3
+	u32 fpsize;
+	u32 fp_offset;
+	u32 *fp_buffer;
+
+	s32 projMatrix_id;
+	s32 modelViewMatrix_id;
+	s32 vertexPosition_id;
+	s32 vertexColor0_id;
+	s32 vertexTexcoord_id;
+	s32 textureUnit_id;
+	s32 mode_id;
+	f32 shader_mode;
+
+	void *vp_ucode;
+	rsxVertexProgram *vpo;
+	void *fp_ucode;
+	rsxFragmentProgram *fpo;
+
+	Matrix4 projMatrix, modelViewMatrix;
+	//Temporary
+	u32 finish_ref;
+	u16* FBtex;
+#endif //PS3
+#if defined(__GX__)||defined(PS3)	//Variables specific to GX
 	int		GXorigX, GXorigY;
 	int		GXwidth, GXheight;
+#endif //__GX__ PS3
+#ifdef __GX__
 	float	GXscaleX, GXscaleY;
 	float	GXzPrimeScale, GXzPrimeTranslate;
 	Mtx44	GXcombW;
@@ -223,6 +270,9 @@ void OGL_SaveScreenshot();
 void OGL_SwapBuffers();
 #endif // __LINUX__
 void OGL_ReadScreen( void **dest, long *width, long *height );
+#ifdef PS3
+void OGL_RSXinitDlist();
+#endif // PS3
 #ifdef __GX__
 void OGL_GXinitDlist();
 void OGL_GXclearEFB();

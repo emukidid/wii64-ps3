@@ -186,18 +186,28 @@ void Set_texture_env( TexEnv *texEnv )
 	combiner.vertex.secondaryColor = COMBINED;
 	combiner.vertex.alpha = texEnv->fragment.alpha;
 
-#ifndef __GX__
-	// Shouldn't ever happen, but who knows?
-	if (OGL.ARB_multitexture)
-		glActiveTextureARB( GL_TEXTURE0_ARB );
+#ifdef PS3
+	switch (texEnv->mode)	// texEnv->mode options are: GL_REPLACE, GL_MODULATE, GL_DECAL
+	{						// combined_shader modes are: SHADER_PASSTEX=1,SHADER_PASSCOLOR=2,SHADER_MODULATE=3
+	case GL_REPLACE:
+		OGL.shader_mode = SHADER_PASSTEX;
+		break;
+	case GL_MODULATE:
+		OGL.shader_mode = SHADER_MODULATE;
+		break;
+	case GL_DECAL:
+		OGL.shader_mode = SHADER_MODULATE;
+		break;
+	default:
+		OGL.shader_mode = SHADER_PASSCOLOR;
+	}
+//	dbg_printf("Set_texture_env shader_mode = %f\r\n",OGL.shader_mode);
+//	OGL.shader_mode = SHADER_PASSCOLOR;
+//	rsxFinish(context, OGL.finish_ref++);
+	rsxSetFragmentProgramParameter(context,OGL.fpo,OGL.mode_id,&OGL.shader_mode,OGL.fp_offset);
+	rsxLoadFragmentProgramLocation(context,OGL.fpo,OGL.fp_offset,GCM_LOCATION_RSX);
 
-	if (texEnv->usesT0 || texEnv->usesT1)
-		glEnable( GL_TEXTURE_2D );
-	else
-		glDisable( GL_TEXTURE_2D );
-
-	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv->mode );
-#else // !__GX__
+#elif defined(__GX__)
 	u8 GXmode;
 
 	switch (texEnv->mode)	// texEnv->mode options are: GL_REPLACE, GL_MODULATE, GL_DECAL
@@ -233,5 +243,16 @@ void Set_texture_env( TexEnv *texEnv )
 		GXmode = GX_PASSCLR;
 	}
 	GX_SetTevOp(GX_TEVSTAGE0,GXmode);
-#endif // __GX__
+#else // __GX__
+	// Shouldn't ever happen, but who knows?
+	if (OGL.ARB_multitexture)
+		glActiveTextureARB( GL_TEXTURE0_ARB );
+
+	if (texEnv->usesT0 || texEnv->usesT1)
+		glEnable( GL_TEXTURE_2D );
+	else
+		glDisable( GL_TEXTURE_2D );
+
+	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv->mode );
+#endif // !__GX__
 }

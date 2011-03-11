@@ -16,10 +16,10 @@
 # include <windows.h>
 #else
 # include "../main/winlnxdefs.h"
-# ifndef __GX__
+# if !(defined(__GX__)||defined(PS3))
 # include "SDL.h"
 # include "SDL_thread.h"
-# endif // !__GX__
+# endif // !__GX__ !PS3
 #endif
 #include "N64.h"
 #include "GBI.h"

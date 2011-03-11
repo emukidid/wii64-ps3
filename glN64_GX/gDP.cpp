@@ -16,6 +16,10 @@
 #include "../gui/DEBUG.h"
 #endif // __GX__
 
+#ifdef PS3
+#include <string.h>
+#endif // PS3
+
 #include "glN64.h"
 #include "N64.h"
 #include "GBI.h"

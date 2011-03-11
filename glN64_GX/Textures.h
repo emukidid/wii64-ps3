@@ -12,7 +12,7 @@
 #ifndef TEXTURES_H
 #define TEXTURES_H
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 #include <GL/gl.h>
 #else // !__GX__
 #define __WIN32__

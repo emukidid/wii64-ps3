@@ -34,10 +34,10 @@
 #ifndef __LINUX__
 # include "Resource.h"
 #else // !__LINUX__
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 # include <glib.h>
 # include <gtk/gtk.h>
-#endif // !__GX__
+#endif // !__GX__ !PS3
 # include <string.h>
 # include <unistd.h>
 # include <stdlib.h>
@@ -127,7 +127,7 @@ void GBI_Unknown( u32 w0, u32 w1 )
 #endif
 }
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 #ifndef __LINUX__
 INT_PTR CALLBACK MicrocodeDlgProc( HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
@@ -297,7 +297,7 @@ static int MicrocodeDialog()
 	return selectedMicrocode;
 }
 #endif // __LINUX__
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 MicrocodeInfo *GBI_AddMicrocode()
 {
@@ -474,10 +474,10 @@ MicrocodeInfo *GBI_DetectMicrocode( u32 uc_start, u32 uc_dstart, u16 uc_dsize )
 	current->type = DialogBox( hInstance, MAKEINTRESOURCE( IDD_MICROCODEDLG ), hWnd, MicrocodeDlgProc );
 #else // !__LINUX__
 	printf( "glN64: Warning - unknown ucode!!!\n" );
-# ifndef __GX__
+# if !(defined(__GX__)||defined(PS3))
 	//TODO: Make sure having ucode = NONE is ok
 	current->type = MicrocodeDialog();
-# endif // !__GX__
+# endif // !__GX__ !PS3
 #endif // __LINUX__
 	return current;
 }

@@ -14,7 +14,6 @@
 #include <ogc/lwp_heap.h>
 #include <stdio.h>
 #include <malloc.h>
-#include <string.h>
 #include "../gui/DEBUG.h"
 #endif // __GX__
 
@@ -29,9 +28,11 @@
 # endif
 # define timeGetTime() time(NULL)
 #endif
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 #include <memory.h>
-#endif // !__GX__
+#else // !__GX__ !PS3
+#include <string.h>
+#endif // __GX__ PS3
 #include "OpenGL.h"
 #include "Textures.h"
 #include "GBI.h"
@@ -404,7 +405,7 @@ void TextureCache_Init()
 	}
 #endif //__GX__
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	u32 dummyTexture[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	glGenTextures( 32, cache.glNoiseNames );
@@ -429,10 +430,10 @@ void TextureCache_Init()
 		}
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, noise );
 	}
-#else // !__GX__
+#else // !__GX__ !PS3
 	//Noise textures don't seem to be necessary and would take 512kB of memory, so don't use for now.
 	//TODO: Implement if needed?
-#endif // __GX__
+#endif // __GX__ PS3
 
 	cache.dummy = TextureCache_AddTop();
 
@@ -458,10 +459,10 @@ void TextureCache_Init()
 	cache.dummy->textureBytes = 64;
 	cache.dummy->tMem = 0;
 
-#ifndef __GX__
-	glBindTexture( GL_TEXTURE_2D, cache.dummy->glName );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, dummyTexture );
-#else // !__GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+	//Setup Dummy Tex
+#elif defined(__GX__)
 	//Dummy texture doesn't seem to be needed, so don't load into GX for now.
 //	cache.dummy->GXtexture = (u16*) memalign(32,cache.dummy->textureBytes);
 	cache.dummy->GXtexture = (u16*) __lwp_heap_allocate(GXtexCache,cache.dummy->textureBytes);
@@ -486,8 +487,10 @@ void TextureCache_Init()
 	memset( cache.GXprimDepthZ[1]->GXtexture, 0x00, cache.GXprimDepthZ[1]->textureBytes);
 	cache.cachedBytes += cache.GXprimDepthZ[0]->textureBytes;
 	cache.cachedBytes += cache.GXprimDepthZ[1]->textureBytes;
-
-#endif // __GX__
+#else // __GX__
+	glBindTexture( GL_TEXTURE_2D, cache.dummy->glName );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, dummyTexture );
+#endif // !__GX__
 
 	cache.cachedBytes = cache.dummy->textureBytes;
 
@@ -527,9 +530,9 @@ void TextureCache_RemoveBottom()
 {
 	CachedTexture *newBottom = cache.bottom->higher;
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	glDeleteTextures( 1, &cache.bottom->glName );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	cache.cachedBytes -= cache.bottom->textureBytes;
 
@@ -539,7 +542,9 @@ void TextureCache_RemoveBottom()
 	if (cache.bottom == cache.top)
 		cache.top = NULL;
 
-#ifdef __GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+#elif defined(__GX__)
 	if( cache.bottom->GXtexture != NULL )
 //		free( cache.bottom->GXtexture );
 		__lwp_heap_free(GXtexCache, cache.bottom->GXtexture);
@@ -587,12 +592,14 @@ void TextureCache_Remove( CachedTexture *texture )
 		texture->lower->higher = texture->higher;
 	}
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	glDeleteTextures( 1, &texture->glName );
 #endif // !__GX__
 
 	cache.cachedBytes -= texture->textureBytes;
-#ifdef __GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+#elif defined(__GX__)
 	if( texture->GXtexture != NULL )
 //		free(texture->GXtexture);
 		__lwp_heap_free(GXtexCache, texture->GXtexture);
@@ -620,12 +627,14 @@ CachedTexture *TextureCache_AddTop()
 	CachedTexture *newtop = (CachedTexture*)malloc( sizeof( CachedTexture ) );
 //	memset( newtop, 0x00, sizeof( CachedTexture ) );
 
-#ifndef __GX__
-	glGenTextures( 1, &newtop->glName );
-#else // !__GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+#elif defined(__GX__)
 	//This should be taken care of later when we call GX_InitTexObj()
 	newtop->GXtexture = NULL;
-#endif // __GX__
+#else // __GX__
+	glGenTextures( 1, &newtop->glName );
+#endif // !__GX__
 
 	newtop->lower = cache.top;
 	newtop->higher = NULL;
@@ -668,10 +677,9 @@ void TextureCache_Destroy()
 {
 	while (cache.bottom)
 		TextureCache_RemoveBottom();
-#ifndef __GX__
-	glDeleteTextures( 32, cache.glNoiseNames );
-//	glDeleteTextures( 1, &cache.glDummyName );
-#else // !__GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+#elif defined(__GX__)
 	//For now we're not using Noise textures.
 
 	//De-Init GXprimDepthZ textures
@@ -683,7 +691,10 @@ void TextureCache_Destroy()
 		free(cache.GXprimDepthZ[1]->GXtexture);
 	free( cache.GXprimDepthZ[0] );
 	free( cache.GXprimDepthZ[1] );
-#endif // __GX__
+#else // __GX__
+	glDeleteTextures( 32, cache.glNoiseNames );
+//	glDeleteTextures( 1, &cache.glDummyName );
+#endif // !__GX__
 
 	cache.top = NULL;
 	cache.bottom = NULL;
@@ -972,7 +983,12 @@ void TextureCache_LoadBackground( CachedTexture *texInfo )
 	}	//	cache.enable2xSaI
 #endif // __GX__
 
-#ifndef __GX__
+#ifdef PS3
+	//TODO: Implement?
+#elif defined(__GX__)
+	//2xSaI textures will not be implemented for now.
+	DCFlushRange(texInfo->GXtexture, texInfo->textureBytes);
+#else // __GX__
 	if (cache.enable2xSaI)
 	{
 		static Interpolator8888 i8888;
@@ -1009,10 +1025,7 @@ void TextureCache_LoadBackground( CachedTexture *texInfo )
 		free (swapped );
 		free( dest );
 	}
-#else // !__GX__
-	//2xSaI textures will not be implemented for now.
-	DCFlushRange(texInfo->GXtexture, texInfo->textureBytes);
-#endif // __GX__
+#endif // !__GX__
 }
 
 void TextureCache_Load( CachedTexture *texInfo )
@@ -1340,6 +1353,7 @@ void TextureCache_Load( CachedTexture *texInfo )
 				((u16*)dest)[j++] = GetTexel( src, tx, i, texInfo->palette );
 		}
 	}
+#ifndef PS3
 	if (cache.enable2xSaI)
 	{
 		static Interpolator8888 i8888;
@@ -1374,6 +1388,7 @@ void TextureCache_Load( CachedTexture *texInfo )
 
 		free( dest );
 	}
+#endif // !PS3
 #endif // !__GX__
 
 #ifdef __GX__
@@ -1417,7 +1432,31 @@ u32 TextureCache_CalculateCRC( u32 t, u32 width, u32 height )
 
 void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 {
-#ifndef __GX__
+#ifdef PS3
+	//TODO: Implement for GCM
+#elif defined(__GX__)
+	if (!((gDP.otherMode.textureFilter == G_TF_BILERP) || (gDP.otherMode.textureFilter == G_TF_AVERAGE) || (OGL.forceBilinear)))
+		OGL.GXuseMinMagNearest = true;
+
+	if (texture->GXtexture != NULL && !OGL.GXrenderTexRect) 
+	{
+		if (cache.enable2xSaI && !texture->frameBufferTexture)
+			GX_InitTexObj(&texture->GXtex, texture->GXtexture, (u16) texture->realWidth << 1, (u16) texture->realHeight << 1, texture->GXtexfmt, 
+				texture->clampS ? GX_CLAMP : GX_REPEAT, 
+				texture->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
+		else
+			GX_InitTexObj(&texture->GXtex, texture->GXtexture, (u16) texture->realWidth, (u16) texture->realHeight, texture->GXtexfmt, 
+				texture->clampS ? GX_CLAMP : GX_REPEAT, 
+				texture->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
+		if (OGL.GXuseMinMagNearest) GX_InitTexObjLOD(&texture->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+		GX_LoadTexObj(&texture->GXtex, t); // t = 0 is GX_TEXMAP0 and t = 1 is GX_TEXMAP1
+		OGL.GXuseMinMagNearest = false;
+#ifdef GLN64_SDLOG
+	sprintf(txtbuffer,"Texture_ActivateTex: MAP%d, GXtexfmt %d, wd %d, ht %d, GXwd %d, GXht %d, clampS %d, clampT %d, fmt %d, size %d\n", t, texture->GXtexfmt, texture->realWidth, texture->realHeight, texture->GXrealWidth, texture->GXrealHeight, texture->clampS, texture->clampT, texture->format, texture->size);
+	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
+#endif // GLN64_SDLOG
+	}
+#else // __GX__
 	// If multitexturing, set the appropriate texture
 	if (OGL.ARB_multitexture)
 		glActiveTextureARB( GL_TEXTURE0_ARB + t );
@@ -1440,29 +1479,7 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 	// Set clamping modes
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture->clampS ? GL_CLAMP_TO_EDGE : GL_REPEAT );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture->clampT ? GL_CLAMP_TO_EDGE : GL_REPEAT );
-#else // !__GX__
-	if (!((gDP.otherMode.textureFilter == G_TF_BILERP) || (gDP.otherMode.textureFilter == G_TF_AVERAGE) || (OGL.forceBilinear)))
-		OGL.GXuseMinMagNearest = true;
-
-	if (texture->GXtexture != NULL && !OGL.GXrenderTexRect) 
-	{
-		if (cache.enable2xSaI && !texture->frameBufferTexture)
-			GX_InitTexObj(&texture->GXtex, texture->GXtexture, (u16) texture->realWidth << 1, (u16) texture->realHeight << 1, texture->GXtexfmt, 
-				texture->clampS ? GX_CLAMP : GX_REPEAT, 
-				texture->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
-		else
-			GX_InitTexObj(&texture->GXtex, texture->GXtexture, (u16) texture->realWidth, (u16) texture->realHeight, texture->GXtexfmt, 
-				texture->clampS ? GX_CLAMP : GX_REPEAT, 
-				texture->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
-		if (OGL.GXuseMinMagNearest) GX_InitTexObjLOD(&texture->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-		GX_LoadTexObj(&texture->GXtex, t); // t = 0 is GX_TEXMAP0 and t = 1 is GX_TEXMAP1
-		OGL.GXuseMinMagNearest = false;
-#ifdef GLN64_SDLOG
-	sprintf(txtbuffer,"Texture_ActivateTex: MAP%d, GXtexfmt %d, wd %d, ht %d, GXwd %d, GXht %d, clampS %d, clampT %d, fmt %d, size %d\n", t, texture->GXtexfmt, texture->realWidth, texture->realHeight, texture->GXrealWidth, texture->GXrealHeight, texture->clampS, texture->clampT, texture->format, texture->size);
-	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-#endif // GLN64_SDLOG
-	}
-#endif // __GX__
+#endif // !__GX__
 
 	texture->lastDList = RSP.DList;
 
@@ -1473,16 +1490,8 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 
 void TextureCache_ActivateDummy( u32 t )
 {
-#ifndef __GX__
-//TextureCache_ActivateTexture( t, cache.dummy );
-	if (OGL.ARB_multitexture)
-		glActiveTextureARB( GL_TEXTURE0_ARB + t );
-
-	glBindTexture( GL_TEXTURE_2D, cache.dummy->glName );
-
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-#else // !__GX__
+#ifdef PS3
+#elif defined(__GX__)
 	if (cache.dummy->GXtexture != NULL) 
 	{
 		GX_InitTexObj(&cache.dummy->GXtex, cache.dummy->GXtexture, (u16) 4, (u16) 4, cache.dummy->GXtexfmt, 
@@ -1493,7 +1502,16 @@ void TextureCache_ActivateDummy( u32 t )
 	sprintf(txtbuffer,"Texture_ActivateDummy: %d\n", t);
 	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
 #endif // GLN64_SDLOG
-#endif // __GX__
+#else // __GX__
+//TextureCache_ActivateTexture( t, cache.dummy );
+	if (OGL.ARB_multitexture)
+		glActiveTextureARB( GL_TEXTURE0_ARB + t );
+
+	glBindTexture( GL_TEXTURE_2D, cache.dummy->glName );
+
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+#endif // !__GX__
 }
 
 void TextureCache_UpdateBackground()
@@ -1533,17 +1551,17 @@ void TextureCache_UpdateBackground()
 
 	cache.misses++;
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	// If multitexturing, set the appropriate texture
 	if (OGL.ARB_multitexture)
 		glActiveTextureARB( GL_TEXTURE0_ARB );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	cache.current[0] = TextureCache_AddTop();
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	glBindTexture( GL_TEXTURE_2D, cache.current[0]->glName );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	cache.current[0]->address = gSP.bgImage.address;
 	cache.current[0]->crc = crc;
@@ -1771,17 +1789,17 @@ void TextureCache_Update( u32 t )
 
 	cache.misses++;
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	// If multitexturing, set the appropriate texture
 	if (OGL.ARB_multitexture)
 		glActiveTextureARB( GL_TEXTURE0_ARB + t );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	cache.current[t] = TextureCache_AddTop();
 
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	glBindTexture( GL_TEXTURE_2D, cache.current[t]->glName );
-#endif // !__GX__
+#endif // !__GX__ !PS3
 
 	cache.current[t]->address = gDP.textureImage.address;
 	cache.current[t]->crc = crc;
@@ -1869,14 +1887,14 @@ void TextureCache_Update( u32 t )
 
 void TextureCache_ActivateNoise( u32 t )
 {
-#ifndef __GX__
+#if !(defined(__GX__)||defined(PS3))
 	if (OGL.ARB_multitexture)
 		glActiveTextureARB( GL_TEXTURE0_ARB + t );
 
 	glBindTexture( GL_TEXTURE_2D, cache.glNoiseNames[RSP.DList & 0x1F] );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-#else // !__GX__
+#else // !__GX__ !PS3
 	//Noise is not being implemented for now.
 #endif // __GX__
 }

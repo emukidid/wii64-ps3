@@ -286,7 +286,9 @@ void RSP_ProcessDList()
 	gDPSetCycleType( G_CYC_1CYCLE );
 	gDPPipelineMode( G_PM_NPRIMITIVE );
 
-#ifdef __GX__
+#ifdef PS3
+	OGL_RSXinitDlist();
+#elif defined(__GX__)
 	OGL_GXinitDlist();
 #endif //__GX__
 

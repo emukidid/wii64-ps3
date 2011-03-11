@@ -100,7 +100,7 @@ void gSPLoadUcodeEx( u32 uc_start, u32 uc_dstart, u16 uc_dsize )
 #ifdef RSPTHREAD
 		SetEvent( RSP.threadMsg[RSPMSG_CLOSE] );
 #else
-# ifndef __GX__
+# if !(defined(__GX__)||defined(PS3))
 		puts( "Warning: Unknown UCODE!!!" );
 # else // !__GX__
 		DEBUG_print((char*)"Warning: Unknown UCODE!!!",DBG_RSPINFO);
@@ -1054,7 +1054,11 @@ void gSPTriangle( s32 v0, s32 v1, s32 v2, s32 flag )
 			if (clippedIndex == 4)
 				OGL_AddTriangle( clippedVertices, 0, 2, 3 );
 
+#ifdef PS3
+			//TODO: Implement for GCM
+#else //PS3
 			glDisable( GL_POLYGON_OFFSET_FILL );
+#endif //!PS3
 
 //			glDepthFunc( GL_LEQUAL );
 
@@ -1062,8 +1066,12 @@ void gSPTriangle( s32 v0, s32 v1, s32 v2, s32 flag )
 			if (nearIndex == 4)
 				OGL_AddTriangle( nearVertices, 0, 2, 3 );
 
+#ifdef PS3
+			//TODO: Implement for GCM
+#else //PS3
 			if (gDP.otherMode.depthMode == ZMODE_DEC)
 				glEnable( GL_POLYGON_OFFSET_FILL );
+#endif //!PS3
 
 //			if (gDP.otherMode.depthCompare)
 //				glDepthFunc( GL_LEQUAL );
@@ -2016,25 +2024,29 @@ void gSPObjSprite( u32 sp )
 	gDPSetTileSize( 0, 0, 0, (imageW - 1) << 2, (imageH - 1) << 2 );
 	gSPTexture( 1.0f, 1.0f, 0, 0, TRUE );
 
-#ifndef __GX__
+#ifdef PS3
+	//Implement for GCM
+#elif defined(__GX__)
+	//TODO: Implement this in GX??
+# ifdef SHOW_DEBUG
+	sprintf(txtbuffer,"gSP: Rendering a Sprite Object!");
+	DEBUG_print(txtbuffer,DBG_VIINFO); //6 
+# endif
+#else // __GX__
 	glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
 	glOrtho( 0, VI.width, VI.height, 0, 0.0f, 32767.0f );
-#else // !__GX__
-	//TODO: Implement this in GX??
-#ifdef SHOW_DEBUG
-	sprintf(txtbuffer,"gSP: Rendering a Sprite Object!");
-	DEBUG_print(txtbuffer,DBG_VIINFO); //6 
-#endif
-#endif // __GX__
+#endif // !__GX__
 	OGL_AddTriangle( gSP.vertices, 0, 1, 2 );
 	OGL_AddTriangle( gSP.vertices, 0, 2, 3 );
 	OGL_DrawTriangles();
-#ifndef __GX__
-	glLoadIdentity();
-#else // !__GX__
+#ifdef PS3
+	//Implement for GCM
+#elif defined(__GX__)
 	//TODO: Implement this in GX??
-#endif // __GX__
+#else // __GX__
+	glLoadIdentity();
+#endif // !__GX__
 
 	if (depthBuffer.current) depthBuffer.current->cleared = FALSE;
 	gDP.colorImage.changed = TRUE;

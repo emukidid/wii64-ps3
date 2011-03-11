@@ -97,9 +97,9 @@ static inline s16 GetResult( u32 A, u32 B, u32 C, u32 D )
 
 u32 Interpolator::interpolate(u32 A, u32 B){
 	if(A != B)
-		return (getHigh1(A) >> 1) +
-		       (getHigh1(B) >> 1) |
-		       getLow1(A & B);
+		return ((getHigh1(A) >> 1) +
+		        (getHigh1(B) >> 1)) |
+		        getLow1(A & B);
 	else
 		return A;
 }

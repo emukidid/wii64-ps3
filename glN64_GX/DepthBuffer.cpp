@@ -7,7 +7,11 @@
  *
 **/
 
-#ifdef __GX__
+#ifdef PS3
+#include "../main/winlnxdefs.h"
+#undef NULL
+#define NULL 0
+#elif defined(__GX__)
 #include <gccore.h>
 #endif // __GX__
 

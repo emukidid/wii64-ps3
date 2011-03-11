@@ -149,17 +149,12 @@ static CONTROL_INFO control_info;
 static RSP_INFO     rsp_info;
 
 extern char audioEnabled;
-extern char printToScreen;
-extern char showFPSonScreen;
-extern char printToSD;
-#ifdef GLN64_GX
-extern char glN64_useFrameBufferTextures;
-extern char glN64_use2xSaiTextures;
-#else //GLN64_GX
+char printToScreen;
+char showFPSonScreen;
+char printToSD;
 char glN64_useFrameBufferTextures;
 char glN64_use2xSaiTextures;
 char renderCpuFramebuffer;
-#endif //!GLN64_GX
 extern timers Timers;
 char menuActive;
        char saveEnabled;
@@ -179,7 +174,6 @@ char menuActive;
 
 //TODO: remove these declarations
 u32 dynacore;
-char printToSD;
 
 static struct {
 	char* key;
