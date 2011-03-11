@@ -17,20 +17,26 @@ struct VIInfo
 {
 	u32 width, height;
 	u32 lastOrigin;
-#ifdef __GX__
+#if (defined(__GX__)||defined(PS3))
 	unsigned int* xfb[2];
 	int which_fb;
 	bool updateOSD;
 	bool enableLoadIcon;
 	bool EFBcleared;
 	bool copy_fb;
-#endif // __GX__
+#endif // __GX__ PS3
 };
 
 extern VIInfo VI;
 
 void VI_UpdateSize();
 void VI_UpdateScreen();
+
+#ifdef PS3
+void VI_RSX_showFPS();
+void VI_RSX_showDEBUG();
+void VI_GX_updateDEBUG();
+#endif // PS3
 
 #ifdef __GX__
 

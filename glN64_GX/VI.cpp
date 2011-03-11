@@ -25,6 +25,12 @@
 //#include "Textures.h"
 #endif // __GX__
 
+#ifdef PS3
+#include "../libgui/IPLFont.h"
+#include "../main/timers.h"
+#include "../main/debug/DEBUG.h"
+#endif // PS3
+
 #include "glN64.h"
 #include "Types.h"
 #include "VI.h"
@@ -42,13 +48,15 @@
 VIInfo VI;
 
 
-#ifdef __GX__
-extern GXRModeObj *vmode, *rmode;
-extern int GX_xfb_offset;
-
+#if defined(__GX__)||defined(PS3)
 extern char printToScreen;
 extern char showFPSonScreen;
 extern char renderCpuFramebuffer;
+#endif // __GX__ PS3
+
+#ifdef __GX__
+extern GXRModeObj *vmode, *rmode;
+extern int GX_xfb_offset;
 
 /*bool updateDEBUGflag;
 bool new_fb;
@@ -82,8 +90,11 @@ void VI_UpdateScreen()
 {
 #ifdef PS3
 	//TODO: Implement in GCM
-//	flip();
 //	glFinish();
+/*	if (renderCpuFramebuffer)
+	{
+		//Only render N64 framebuffer in RDRAM and not EFB
+	}*/
 
 	if (OGL.frameBufferTextures)
 	{
@@ -94,9 +105,25 @@ void VI_UpdateScreen()
 		{
 //			dbg_printf("VI_UpdateScreen -> flip\r\n");
 //			rsxFinish(context, OGL.finish_ref++);
+			VI_RSX_showFPS();
+			VI_RSX_showDEBUG();
 			flip();
 			gSP.changed &= ~CHANGED_COLORBUFFER;
 		}
+/*		if(VI.updateOSD && (gSP.changed & CHANGED_COLORBUFFER))
+		{
+			//VI_GX_cleanUp();
+			VI_RSX_showFPS();
+			//VI_GX_showDEBUG();
+			//GX_SetCopyClear ((GXColor){0,0,0,255}, 0xFFFFFF);
+			//GX_CopyDisp (VI.xfb[VI.which_fb]+GX_xfb_offset, GX_FALSE);
+			//GX_DrawDone(); //Wait until EFB->XFB copy is complete
+			VI.updateOSD = false;
+			//VI.enableLoadIcon = true;
+			//VI.EFBcleared = false;
+			VI.copy_fb = true;
+			gSP.changed &= ~CHANGED_COLORBUFFER;
+		}*/
 	}
 //	glFinish();
 #elif defined(__GX__)
@@ -217,11 +244,71 @@ void VI_UpdateScreen()
 
 }
 
-#ifdef __GX__
+#if (defined(__GX__)||defined(PS3))
 extern "C" {
 extern long long gettime();
 extern unsigned int diff_sec(long long start,long long end);
 };
+
+void VI_GX_updateDEBUG()
+{
+	VI.updateOSD = true;
+}
+
+extern timers Timers;
+extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH];
+#endif // __GX__ PS3
+
+#ifdef PS3
+void VI_RSX_showFPS(){
+	static char caption[25];
+
+	TimerUpdate();
+
+	sprintf(caption, "%.1f VI/s, %.1f FPS",Timers.vis,Timers.fps);
+	
+	GXColor fontColor = {150,255,150,255};
+	menu::IplFont::getInstance().drawInit(fontColor);
+	if(showFPSonScreen)
+		menu::IplFont::getInstance().drawString(10,35,caption, 1.0, false);
+}
+
+void VI_RSX_showDEBUG()
+{
+#ifdef SHOW_DEBUG
+	int i = 0;
+	GXColor fontColor = {150, 255, 150, 255};
+//	VI_GX_showStats();
+	DEBUG_update();
+	menu::IplFont::getInstance().drawInit(fontColor);
+	if(printToScreen)
+		for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
+			menu::IplFont::getInstance().drawString(10,(10*i+60),text[i], 0.5, false); 
+#endif
+}
+#elif defined(__GX__)
+void VI_GX_showFPS(){
+	static char caption[25];
+
+	TimerUpdate();
+
+	sprintf(caption, "%.1f VI/s, %.1f FPS",Timers.vis,Timers.fps);
+	
+	GXColor fontColor = {150,255,150,255};
+#ifndef MENU_V2
+	write_font_init_GX(fontColor);
+	if(showFPSonScreen)
+		write_font(10,35,caption, 1.0);
+#else
+	menu::IplFont::getInstance().drawInit(fontColor);
+	if(showFPSonScreen)
+		menu::IplFont::getInstance().drawString(10,35,caption, 1.0, false);
+#endif
+
+	//reset swap table from GUI/DEBUG
+//	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+}
 
 void VI_GX_init() {
 	//init_font();
@@ -247,31 +334,6 @@ void VI_GX_clearEFB(){
 	GX_SetCopyClear ((GXColor){0,0,0,255}, 0xFFFFFF);
 	GX_CopyDisp (VI.xfb[VI.which_fb]+GX_xfb_offset, GX_TRUE);	//clear the EFB before executing new Dlist
 	GX_DrawDone(); //Wait until EFB->XFB copy is complete
-}
-
-extern timers Timers;
-
-void VI_GX_showFPS(){
-	static char caption[25];
-
-	TimerUpdate();
-
-	sprintf(caption, "%.1f VI/s, %.1f FPS",Timers.vis,Timers.fps);
-	
-	GXColor fontColor = {150,255,150,255};
-#ifndef MENU_V2
-	write_font_init_GX(fontColor);
-	if(showFPSonScreen)
-		write_font(10,35,caption, 1.0);
-#else
-	menu::IplFont::getInstance().drawInit(fontColor);
-	if(showFPSonScreen)
-		menu::IplFont::getInstance().drawString(10,35,caption, 1.0, false);
-#endif
-
-	//reset swap table from GUI/DEBUG
-//	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
 void VI_GX_showLoadProg(float percent)
@@ -424,13 +486,6 @@ void VI_GX_showLoadProg(float percent)
 //    GX_DrawDone();
 //	VI.copy_fb = true;
 }
-
-void VI_GX_updateDEBUG()
-{
-	VI.updateOSD = true;
-}
-
-extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH];
 
 void VI_GX_showDEBUG()
 {
@@ -637,7 +692,20 @@ void VI_GX_renderCpuFramebuffer()
 	__lwp_heap_free(GXtexCache, FBtex);
 //	free(FBtex);
 }
+#endif //_GX__
 
+#ifdef PS3
+/*void VI_GX_PreRetraceCallback(u32 retraceCnt)
+{
+	if(VI.copy_fb)
+	{
+		VIDEO_SetNextFramebuffer(VI.xfb[VI.which_fb]);
+		VIDEO_Flush();
+		VI.which_fb ^= 1;
+		VI.copy_fb = false;
+	}
+}*/
+#elif defined(__GX__)
 void VI_GX_PreRetraceCallback(u32 retraceCnt)
 {
 	if(VI.copy_fb)

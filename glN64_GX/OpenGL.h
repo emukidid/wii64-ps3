@@ -42,6 +42,9 @@
 #include <rsx/rsx.h>
 #include <sysutil/video.h>
 #include "../main/rsxutil.h"
+#ifdef SHOW_DEBUG
+#include "../main/debug/DEBUG.h"
+#endif
 
 extern "C" void dbg_printf(const char *fmt,...);
 

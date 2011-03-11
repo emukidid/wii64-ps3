@@ -352,6 +352,8 @@ EXPORT void CALL ProcessDList(void)
 	sprintf(txtbuffer,"RSP: VtxMP = %d; pDcnt = %d; Zprim = %d; noZprim = %d", OGL.GXnumVtxMP, cache.GXprimDepthCnt, cache.GXZTexPrimCnt, cache.GXnoZTexPrimCnt);
 	DEBUG_print(txtbuffer,DBG_RSPINFO);
 #endif
+#endif // __GX__
+#if (defined(__GX__)||defined(PS3))
 	VI_GX_updateDEBUG();
 #endif // __GX__
 }

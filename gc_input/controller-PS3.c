@@ -181,7 +181,13 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	if(config->invertedY) c->Y_AXIS = -c->Y_AXIS;
 
 	// Return whether the exit button(s) are pressed
-	return isHeld(config->exit);
+	if (isHeld(config->exit))
+	{
+		previousButtonsPS3[Control] &= ~config->exit->mask;
+		return 1;
+	}
+	else
+		return 0;
 }
 
 static void pause(int Control){
