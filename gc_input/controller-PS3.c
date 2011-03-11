@@ -92,8 +92,8 @@ static button_t analog_sources[] = {
 };
 
 static button_t menu_combos[] = {
-	{ 0, PS3_BTN_START|PS3_BTN_SELECT,		"Start+Select" },
-	{ 1, PS3_BTN_SQUARE|PS3_BTN_TRIANGLE,	"Square+Triangle" },
+	{ 0, PS3_BTN_SQUARE|PS3_BTN_TRIANGLE,	"Square+Triangle" },
+	{ 1, PS3_BTN_START|PS3_BTN_SELECT,		"Start+Select" },
 };
 
 static u32 getButtons(u32 buttonsPS3, u32 analogPS3)
@@ -172,11 +172,11 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->U_CBUTTON    = isHeld(config->CU);
 
 	if(config->analog->mask == L_STICK_AS_ANALOG){
-		c->X_AXIS =  (s8) ((int)((analogPS3>>8) & 0xFF) - 128);
-		c->Y_AXIS = -(s8) ((int)((analogPS3>>0) & 0xFF) - 128);
+		c->X_AXIS = (s8)  ((int)((analogPS3>>8) & 0xFF) - 128);
+		c->Y_AXIS = (s8) -((int)((analogPS3>>0) & 0xFF) - 127);
 	} else if(config->analog->mask == R_STICK_AS_ANALOG){
-		c->X_AXIS =  (s8) ((int)((analogPS3>>24) & 0xFF) - 128);
-		c->Y_AXIS = -(s8) ((int)((analogPS3>>16) & 0xFF) - 128);
+		c->X_AXIS = (s8)  ((int)((analogPS3>>24) & 0xFF) - 128);
+		c->Y_AXIS = (s8) -((int)((analogPS3>>16) & 0xFF) - 127);
 	}
 	if(config->invertedY) c->Y_AXIS = -c->Y_AXIS;
 

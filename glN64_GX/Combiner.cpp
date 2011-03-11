@@ -24,7 +24,7 @@
 #include "OpenGL.h"
 #include "Combiner.h"
 #ifdef PS3
-# include "RSX_combiner.h"
+//# include "RSX_combiner.h"
 # include "texture_env.h"
 #elif defined(__GX__)
 # include "TEV_combiner.h"
