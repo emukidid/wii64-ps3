@@ -446,22 +446,22 @@ void Graphics::drawRect(int x, int y, int width, int height)
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[0].r/255.0f, (float)appliedColor[0].g/255.0f, 
 			(float)appliedColor[0].b/255.0f, (float)appliedColor[0].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) y, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[1].r/255.0f, (float)appliedColor[1].g/255.0f, 
 			(float)appliedColor[1].b/255.0f, (float)appliedColor[1].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) (x+width),(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) (x+width),(float) y, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[2].r/255.0f, (float)appliedColor[2].g/255.0f, 
 			(float)appliedColor[2].b/255.0f, (float)appliedColor[2].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) (x+width),(float) (y+height), depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) (x+width),(float) (y+height), depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[3].r/255.0f, (float)appliedColor[3].g/255.0f, 
 			(float)appliedColor[3].b/255.0f, (float)appliedColor[3].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) (y+height), depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) (y+height), depth, 1.0f);
 	rsxDrawVertexEnd(context);
 
 /*	GX_Begin(GX_LINESTRIP, GX_VTXFMT0, 4);
@@ -489,22 +489,22 @@ void Graphics::fillRect(int x, int y, int width, int height)
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[0].r/255.0f, (float)appliedColor[0].g/255.0f, 
 			(float)appliedColor[0].b/255.0f, (float)appliedColor[0].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) y, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[1].r/255.0f, (float)appliedColor[1].g/255.0f, 
 			(float)appliedColor[1].b/255.0f, (float)appliedColor[1].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) (x+width),(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) (x+width),(float) y, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[2].r/255.0f, (float)appliedColor[2].g/255.0f, 
 			(float)appliedColor[2].b/255.0f, (float)appliedColor[2].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) (x+width),(float) (y+height), depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) (x+width),(float) (y+height), depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[3].r/255.0f, (float)appliedColor[3].g/255.0f, 
 			(float)appliedColor[3].b/255.0f, (float)appliedColor[3].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) (y+height), depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) (y+height), depth, 1.0f);
 	rsxDrawVertexEnd(context);
 
 /*		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 0.0f, 0.0f);
@@ -548,28 +548,28 @@ void Graphics::drawImage(int textureId, int x, int y, int width, int height, flo
 		rsxDrawVertex2f(context, vertexTexcoord_id, s1, t1);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s2, t1);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s1, t1);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) y, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[1].r/255.0f, (float)appliedColor[1].g/255.0f, 
 			(float)appliedColor[1].b/255.0f, (float)appliedColor[1].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, s2, t1);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s2, t2);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s2, t1);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) (x+width),(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) (x+width),(float) y, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[2].r/255.0f, (float)appliedColor[2].g/255.0f, 
 			(float)appliedColor[2].b/255.0f, (float)appliedColor[2].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, s2, t2);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s1, t2);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s2, t2);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) (x+width),(float) (y+height), depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) (x+width),(float) (y+height), depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[3].r/255.0f, (float)appliedColor[3].g/255.0f, 
 			(float)appliedColor[3].b/255.0f, (float)appliedColor[3].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, s1, t2);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s1, t1);
 //		rsxDrawVertex2f(context, vertexTexcoord_id, s1, t2);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) (y+height), depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) (y+height), depth, 1.0f);
 	rsxDrawVertexEnd(context);
 
 /*	//Init texture here or in calling code?
@@ -598,19 +598,19 @@ void Graphics::testPrim()
 	rsxDrawVertexBegin(context,GCM_TYPE_QUADS);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0, 0);
 		rsxDrawVertex4f(context, vertexColor0_id, 1, 0, 0, 1); //red
-		rsxDrawVertex3f(context, vertexPosition_id,  100, 300, depth);
+		rsxDrawVertex4f(context, vertexPosition_id,  100, 300, depth, 1.0f);
 
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0, 1);
 		rsxDrawVertex4f(context, vertexColor0_id, 0, 1, 0, 1); //green
-		rsxDrawVertex3f(context, vertexPosition_id,  100, 400, depth);
+		rsxDrawVertex4f(context, vertexPosition_id,  100, 400, depth, 1.0f);
 
 		rsxDrawVertex2f(context, vertexTexcoord_id, 1, 1);
 		rsxDrawVertex4f(context, vertexColor0_id, 0, 0, 1, 1); //blue
-		rsxDrawVertex3f(context, vertexPosition_id,  200, 400, depth);
+		rsxDrawVertex4f(context, vertexPosition_id,  200, 400, depth, 1.0f);
 
 		rsxDrawVertex2f(context, vertexTexcoord_id, 1, 0);
 		rsxDrawVertex4f(context, vertexColor0_id, 1, 1, 1, 1); //white
-		rsxDrawVertex3f(context, vertexPosition_id,  200, 300, depth);
+		rsxDrawVertex4f(context, vertexPosition_id,  200, 300, depth, 1.0f);
 	rsxDrawVertexEnd(context);
 }
 
@@ -620,12 +620,12 @@ void Graphics::drawLine(int x1, int y1, int x2, int y2)
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[0].r/255.0f, (float)appliedColor[0].g/255.0f, 
 			(float)appliedColor[0].b/255.0f, (float)appliedColor[0].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x1,(float) y1, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x1,(float) y1, depth, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[1].r/255.0f, (float)appliedColor[1].g/255.0f, 
 			(float)appliedColor[1].b/255.0f, (float)appliedColor[1].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x2,(float) y2, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x2,(float) y2, depth, 1.0f);
 	rsxDrawVertexEnd(context);
 
 /*	GX_Begin(GX_LINES, GX_VTXFMT0, 2);
@@ -658,7 +658,7 @@ void Graphics::drawCircle(int x, int y, int radius, int numSegments)
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[0].r/255.0f, (float)appliedColor[0].g/255.0f, 
 			(float)appliedColor[0].b/255.0f, (float)appliedColor[0].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) point_x,(float) point_y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) point_x,(float) point_y, depth, 1.0f);
 		//GX_Position3f32((float) point_x,(float) point_y, depth );
 		//GX_Color4u8(appliedColor[0].r, appliedColor[0].g, appliedColor[0].b, appliedColor[0].a);
 		//GX_TexCoord2f32(0.0f,0.0f);
@@ -681,7 +681,7 @@ void Graphics::drawPoint(int x, int y, int radius)
 		rsxDrawVertex4f(context, vertexColor0_id, (float)appliedColor[0].r/255.0f, (float)appliedColor[0].g/255.0f, 
 			(float)appliedColor[0].b/255.0f, (float)appliedColor[0].a/255.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f,0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, (float) x,(float) y, depth);
+		rsxDrawVertex4f(context, vertexPosition_id, (float) x,(float) y, depth, 1.0f);
 	rsxDrawVertexEnd(context);
 
 /*	GX_SetPointSize(u8 (radius *3 ),GX_TO_ZERO);

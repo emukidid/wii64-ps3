@@ -434,19 +434,19 @@ void VI::updateScreen()
 
 		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f, 0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 0.0f, 0.0f);
+		rsxDrawVertex4f(context, vertexPosition_id, 0.0f, 0.0f, 0.0f, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 0.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 0.0f, 0.0f);
+		rsxDrawVertex4f(context, vertexPosition_id, 640.0f, 0.0f, 0.0f, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 1.0f, 1.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, 640.0f, 480.0f, 0.0f);
+		rsxDrawVertex4f(context, vertexPosition_id, 640.0f, 480.0f, 0.0f, 1.0f);
 
 		rsxDrawVertex4f(context, vertexColor0_id, 1.0f, 1.0f, 1.0f, 1.0f);
 		rsxDrawVertex2f(context, vertexTexcoord_id, 0.0f, 1.0f);
-		rsxDrawVertex3f(context, vertexPosition_id, 0.0f, 480.0f, 0.0f);
+		rsxDrawVertex4f(context, vertexPosition_id, 0.0f, 480.0f, 0.0f, 1.0f);
 
 	rsxDrawVertexEnd(context);
 

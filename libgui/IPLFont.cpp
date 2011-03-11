@@ -653,7 +653,7 @@ void IplFont::drawString(int x, int y, char *string, float scale, bool centered)
 			rsxDrawVertex4f(context, vertexColor0_id, (float)fontColor.r/255.0f, (float)fontColor.g/255.0f, 
 				(float)fontColor.b/255.0f, (float)fontColor.a/255.0f);
 			rsxDrawVertex2f(context, vertexTexcoord_id, s0, t0);
-			rsxDrawVertex3f(context, vertexPosition_id, (float) (x + s),(float) (y + t), 0.0f);
+			rsxDrawVertex4f(context, vertexPosition_id, (float) (x + s),(float) (y + t), 0.0f, 1.0f);
 		}
 		rsxDrawVertexEnd(context);
 #endif //!__GX__
