@@ -85,10 +85,7 @@ AiLenChanged( void )
 EXPORT DWORD CALL
 AiReadLength( void )
 {
-	//dbg_printf("AiReadLength. length %08X\r\n",length);
-	length -= ((length>>2)-0x100);
-	if(length<0) length = 0;
-	return length;
+	return 0;
 }
 
 EXPORT void CALL
