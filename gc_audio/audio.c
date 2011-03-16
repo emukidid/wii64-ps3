@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <audio/audio.h>
 
 
 #include "AudioPlugin.h"
@@ -70,8 +71,12 @@ static int   audio_paused = 0;
 #define thread_buffer which_buffer
 #endif
 
-
 char audioEnabled;
+u32 portNum;
+audioPortParam params;
+audioPortConfig config;
+static u64 snd_key;
+static sys_event_queue_t snd_queue;
 
 EXPORT void CALL
 AiDacrateChanged( int SystemType )
@@ -119,6 +124,35 @@ static void done_playing(void){
 }
 #endif
 
+void fillBuffer(f32 *buf)
+{
+	u32 i;
+	static u32 pos = 0;
+
+	for(i=0;i<AUDIO_BLOCK_SAMPLES;i++) {
+		buf[i*2 + 0] = (f32)*((s16*)&buffer[thread_buffer][pos])/32768.0f;
+		buf[i*2 + 1] = (f32)*((s16*)&buffer[thread_buffer][pos + 2])/32768.0f;
+		
+		pos += 4;
+		if(pos>=buffer_size) pos = 0;
+	}
+}
+
+void playOneBlock()
+{
+	f32 *buf;
+	s32 ret = 0;
+	sys_event_t event;
+	u64 current_block = *(u64*)((u64)config.readIndex);
+	f32 *dataStart = (f32*)((u64)config.audioDataStart);
+	u32 audio_block_index = (current_block + 1)%config.numBlocks;
+
+	ret = sysEventQueueReceive(snd_queue,&event,20*1000);
+
+	buf = dataStart + config.channelCount*AUDIO_BLOCK_SAMPLES*audio_block_index;
+	fillBuffer(buf);
+}
+
 static void inline play_buffer(void){
 #ifndef THREADED_AUDIO
 	// We should wait for the other buffer to finish its DMA transfer first
@@ -136,19 +170,16 @@ static void inline play_buffer(void){
 	LWP_SemWait(buffer_full);
 #endif
 
-	// Make sure the buffer is in RAM, not the cache
-	//DCFlushRange(buffer[thread_buffer], buffer_size);
-
-	// Actually send the buffer out to be played next
-	//AUDIO_InitDMA((unsigned int)&buffer[thread_buffer], buffer_size);
-
+	// Start the audio port
+	int ret = audioPortStart(portNum);
+	printf("audioPortStart: %08x\n",ret);
+	
 #ifdef THREADED_AUDIO
 	// Wait for the audio interface to be free before playing
 	LWP_SemWait(audio_free);
 #endif
 
-	// Start playing the buffer
-	//AUDIO_StartDMA();
+	playOneBlock();
 
 #ifdef THREADED_AUDIO
 	// Move the index to the next buffer
@@ -291,7 +322,38 @@ EXPORT BOOL CALL
 InitiateAudio( AUDIO_INFO Audio_Info )
 {
 	AudioInfo = Audio_Info;
-	//AUDIO_Init(NULL);
+	
+	s32 ret = audioInit();
+
+	dbg_printf("audioInit: %08x\n",ret);
+
+	params.numChannels = AUDIO_PORT_2CH;
+	params.numBlocks = AUDIO_BLOCK_8;
+	params.attrib = 0x1000;
+	params.level = 1.0f;
+	ret = audioPortOpen(&params,&portNum);
+	dbg_printf("audioPortOpen: %08x\n",ret);
+	dbg_printf("      portNum: %d\n",portNum);
+
+	ret = audioGetPortConfig(portNum,&config);
+	dbg_printf("audioGetPortConfig: %08x\n",ret);
+	dbg_printf("config.readIndex: %08x\n",config.readIndex);
+	dbg_printf("config.status: %d\n",config.status);
+	dbg_printf("config.channelCount: %ld\n",config.channelCount);
+	dbg_printf("config.numBlocks: %ld\n",config.numBlocks);
+	dbg_printf("config.portSize: %d\n",config.portSize);
+	dbg_printf("config.audioDataStart: %08x\n",config.audioDataStart);
+
+	ret = audioCreateNotifyEventQueue(&snd_queue,&snd_key);
+	dbg_printf("audioCreateNotifyEventQueue: %08x\n",ret);
+	dbg_printf("snd_queue: %16lx\n",(long unsigned int)snd_queue);
+	dbg_printf("snd_key: %16lx\n",snd_key);
+
+	ret = audioSetNotifyEventQueue(snd_key);
+	dbg_printf("audioSetNotifyEventQueue: %08x\n",ret);
+
+	ret = sysEventQueueDrain(snd_queue);
+	dbg_printf("sysEventQueueDrain: %08x\n",ret);
 	return TRUE;
 }
 
@@ -325,7 +387,9 @@ RomClosed( void )
 	LWP_JoinThread(audio_thread, NULL);
 	audio_paused = 0;
 #endif
-	//AUDIO_StopDMA(); // So we don't have a buzzing sound when we exit the game
+	// So we don't have a buzzing sound when we exit the game
+	int ret = audioPortStop(portNum);
+	dbg_printf("audioPortStop: %08x\n",ret);
 }
 
 EXPORT void CALL
@@ -342,7 +406,8 @@ void pauseAudio(void){
 		audio_paused = 1;
 	}
 #endif
-	//AUDIO_StopDMA();
+	int ret = audioPortStop(portNum);
+	dbg_printf("audioPortStop: %08x\n",ret);
 }
 
 void resumeAudio(void){
