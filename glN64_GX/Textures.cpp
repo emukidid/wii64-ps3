@@ -460,8 +460,35 @@ void TextureCache_Init()
 	cache.dummy->tMem = 0;
 
 #ifdef PS3
-	//TODO: Implement for GCM
 	//Setup Dummy Tex
+	cache.dummy->rsxTextureBuffer = (u32*)rsxMemalign(128,cache.dummy->textureBytes);
+	cache.dummy->rsxFmt = GCM_TEXTURE_FORMAT_A8R8G8B8 | GCM_TEXTURE_FORMAT_LIN;
+	for (int i = 0; i<16; i+=4)
+	{
+		cache.dummy->rsxTextureBuffer[i  ] = (u32) 0xFFFFFFFF;	//alternate white/black pixels
+		cache.dummy->rsxTextureBuffer[i+1] = (u32) 0xFFFFFFFF;
+		cache.dummy->rsxTextureBuffer[i+2] = (u32) 0x00000000;
+		cache.dummy->rsxTextureBuffer[i+3] = (u32) 0x00000000;
+	}
+	rsxAddressToOffset(cache.dummy->rsxTextureBuffer,&cache.dummy->rsxTextureOffset);
+	cache.dummy->rsxTex.format		= cache.dummy->rsxFmt;
+	cache.dummy->rsxTex.mipmap		= 1;
+	cache.dummy->rsxTex.dimension	= GCM_TEXTURE_DIMS_2D;
+	cache.dummy->rsxTex.cubemap		= GCM_FALSE;
+	cache.dummy->rsxTex.remap		= ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
+									   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
+									   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
+									   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
+									   (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
+									   (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
+									   (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
+									   (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+	cache.dummy->rsxTex.width		= cache.dummy->width;
+	cache.dummy->rsxTex.height		= cache.dummy->height;
+	cache.dummy->rsxTex.depth		= 1;
+	cache.dummy->rsxTex.location	= GCM_LOCATION_RSX;
+	cache.dummy->rsxTex.pitch		= cache.dummy->width*4;
+	cache.dummy->rsxTex.offset		= cache.dummy->rsxTextureOffset;
 #elif defined(__GX__)
 	//Dummy texture doesn't seem to be needed, so don't load into GX for now.
 //	cache.dummy->GXtexture = (u16*) memalign(32,cache.dummy->textureBytes);
@@ -543,7 +570,8 @@ void TextureCache_RemoveBottom()
 		cache.top = NULL;
 
 #ifdef PS3
-	//TODO: Implement for GCM
+	if( cache.bottom->rsxTextureBuffer != NULL )
+		rsxFree(cache.bottom->rsxTextureBuffer);
 #elif defined(__GX__)
 	if( cache.bottom->GXtexture != NULL )
 //		free( cache.bottom->GXtexture );
@@ -598,7 +626,8 @@ void TextureCache_Remove( CachedTexture *texture )
 
 	cache.cachedBytes -= texture->textureBytes;
 #ifdef PS3
-	//TODO: Implement for GCM
+	if( texture->rsxTextureBuffer != NULL )
+		rsxFree(texture->rsxTextureBuffer);
 #elif defined(__GX__)
 	if( texture->GXtexture != NULL )
 //		free(texture->GXtexture);
@@ -628,7 +657,7 @@ CachedTexture *TextureCache_AddTop()
 //	memset( newtop, 0x00, sizeof( CachedTexture ) );
 
 #ifdef PS3
-	//TODO: Implement for GCM
+	newtop->rsxTextureBuffer = NULL;
 #elif defined(__GX__)
 	//This should be taken care of later when we call GX_InitTexObj()
 	newtop->GXtexture = NULL;
@@ -984,7 +1013,31 @@ void TextureCache_LoadBackground( CachedTexture *texInfo )
 #endif // __GX__
 
 #ifdef PS3
-	//TODO: Implement?
+	//TODO: Implement 2xSaI
+	texInfo->rsxTextureBuffer = (u32*)rsxMemalign(128,texInfo->textureBytes);
+	memcpy( texInfo->rsxTextureBuffer, dest, texInfo->textureBytes );
+	texInfo->rsxFmt = GCM_TEXTURE_FORMAT_A8R8G8B8 | GCM_TEXTURE_FORMAT_LIN;
+	rsxAddressToOffset(texInfo->rsxTextureBuffer,&texInfo->rsxTextureOffset);
+	texInfo->rsxTex.format		= texInfo->rsxFmt;
+	texInfo->rsxTex.mipmap		= 1;
+	texInfo->rsxTex.dimension	= GCM_TEXTURE_DIMS_2D;
+	texInfo->rsxTex.cubemap		= GCM_FALSE;
+	texInfo->rsxTex.remap		= ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
+								   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
+								   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
+								   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+	texInfo->rsxTex.width		= texInfo->realWidth;
+	texInfo->rsxTex.height		= texInfo->realHeight;
+	texInfo->rsxTex.depth		= 1;
+	texInfo->rsxTex.location	= GCM_LOCATION_RSX;
+	texInfo->rsxTex.pitch		= texInfo->realWidth*4;
+	texInfo->rsxTex.offset		= texInfo->rsxTextureOffset;
+	free( swapped );
+	free( dest );
 #elif defined(__GX__)
 	//2xSaI textures will not be implemented for now.
 	DCFlushRange(texInfo->GXtexture, texInfo->textureBytes);
@@ -1098,7 +1151,7 @@ void TextureCache_Load( CachedTexture *texInfo )
 		texInfo->GXtexfmt = GX_TF_IA8;
 		GXsize = 2;
 	}
-		else
+	else
 	{
 		GetTexel = imageFormat[texInfo->size][texInfo->format].GetGX;
 		texInfo->GXtexfmt = imageFormat[texInfo->size][texInfo->format].GXtexfmt;
@@ -1260,7 +1313,7 @@ void TextureCache_Load( CachedTexture *texInfo )
 #ifdef SHOW_DEBUG
 			DEBUG_print((char*)"Textures: Converting Invalid Texture Format",DBG_TXINFO);
 #endif
-      break;
+			break;
 		}
 	}
 	else if (texInfo->textureBytes > 0) //	!cache.enable2xSaI
@@ -1353,7 +1406,38 @@ void TextureCache_Load( CachedTexture *texInfo )
 				((u16*)dest)[j++] = GetTexel( src, tx, i, texInfo->palette );
 		}
 	}
-#ifndef PS3
+#endif // !__GX__
+
+#ifdef PS3
+	//TODO: Implement 2xSaI
+	texInfo->rsxTextureBuffer = (u32*)rsxMemalign(128,texInfo->textureBytes);
+	memcpy( texInfo->rsxTextureBuffer, dest, texInfo->textureBytes );
+	texInfo->rsxFmt = GCM_TEXTURE_FORMAT_A8R8G8B8 | GCM_TEXTURE_FORMAT_LIN;
+	rsxAddressToOffset(texInfo->rsxTextureBuffer,&texInfo->rsxTextureOffset);
+	texInfo->rsxTex.format		= texInfo->rsxFmt;
+	texInfo->rsxTex.mipmap		= 1;
+	texInfo->rsxTex.dimension	= GCM_TEXTURE_DIMS_2D;
+	texInfo->rsxTex.cubemap		= GCM_FALSE;
+	texInfo->rsxTex.remap		= ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
+								   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
+								   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
+								   (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
+								   (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+	texInfo->rsxTex.width		= texInfo->realWidth;
+	texInfo->rsxTex.height		= texInfo->realHeight;
+	texInfo->rsxTex.depth		= 1;
+	texInfo->rsxTex.location	= GCM_LOCATION_RSX;
+	texInfo->rsxTex.pitch		= texInfo->realWidth*4;
+	texInfo->rsxTex.offset		= texInfo->rsxTextureOffset;
+	free( dest );
+#elif defined(__GX__)
+	//2xSaI textures will not be implemented for now.
+	if(texInfo->GXtexture != NULL)
+		DCFlushRange(texInfo->GXtexture, texInfo->textureBytes);
+#else // __GX__
 	if (cache.enable2xSaI)
 	{
 		static Interpolator8888 i8888;
@@ -1388,14 +1472,7 @@ void TextureCache_Load( CachedTexture *texInfo )
 
 		free( dest );
 	}
-#endif // !PS3
 #endif // !__GX__
-
-#ifdef __GX__
-	//2xSaI textures will not be implemented for now.
-	if(texInfo->GXtexture != NULL)
-		DCFlushRange(texInfo->GXtexture, texInfo->textureBytes);
-#endif // __GX__
 }
 
 u32 TextureCache_CalculateCRC( u32 t, u32 width, u32 height )
@@ -1433,7 +1510,21 @@ u32 TextureCache_CalculateCRC( u32 t, u32 width, u32 height )
 void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 {
 #ifdef PS3
-	//TODO: Implement for GCM
+	//TODO: Implement two texture units
+//	rsxFlushBuffer(context);
+	rsxInvalidateTextureCache(context,GCM_INVALIDATE_TEXTURE); //needed?
+
+	rsxLoadTexture(context,OGL.textureUnit_id,&texture->rsxTex);
+	rsxTextureControl(context,OGL.textureUnit_id,GCM_TRUE,0<<8,12<<8,GCM_TEXTURE_MAX_ANISO_1);
+	// Set filter mode. Almost always bilinear, but check anyways
+	if ((gDP.otherMode.textureFilter == G_TF_BILERP) || (gDP.otherMode.textureFilter == G_TF_AVERAGE) || (OGL.forceBilinear))
+		rsxTextureFilter(context,OGL.textureUnit_id,GCM_TEXTURE_LINEAR,GCM_TEXTURE_LINEAR,GCM_TEXTURE_CONVOLUTION_QUINCUNX);
+	else
+		rsxTextureFilter(context,OGL.textureUnit_id,GCM_TEXTURE_NEAREST,GCM_TEXTURE_NEAREST,GCM_TEXTURE_CONVOLUTION_QUINCUNX);
+	// Set clamping modes
+	rsxTextureWrapMode(context,OGL.textureUnit_id,texture->clampS ? GCM_TEXTURE_CLAMP_TO_EDGE : GCM_TEXTURE_REPEAT,
+		texture->clampT ? GCM_TEXTURE_CLAMP_TO_EDGE : GCM_TEXTURE_REPEAT,GCM_TEXTURE_CLAMP_TO_EDGE,0,GCM_TEXTURE_ZFUNC_LESS,0);
+//	dbg_printf("TextureCache_ActivateTexture %d\r\n", t);
 #elif defined(__GX__)
 	if (!((gDP.otherMode.textureFilter == G_TF_BILERP) || (gDP.otherMode.textureFilter == G_TF_AVERAGE) || (OGL.forceBilinear)))
 		OGL.GXuseMinMagNearest = true;
@@ -1491,6 +1582,15 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 void TextureCache_ActivateDummy( u32 t )
 {
 #ifdef PS3
+	//TODO: Implement two texture units
+//	rsxFlushBuffer(context);
+	rsxInvalidateTextureCache(context,GCM_INVALIDATE_TEXTURE); //needed?
+
+	rsxLoadTexture(context,OGL.textureUnit_id,&cache.dummy->rsxTex);
+	rsxTextureControl(context,OGL.textureUnit_id,GCM_TRUE,0<<8,12<<8,GCM_TEXTURE_MAX_ANISO_1);
+	rsxTextureFilter(context,OGL.textureUnit_id,GCM_TEXTURE_NEAREST,GCM_TEXTURE_NEAREST,GCM_TEXTURE_CONVOLUTION_QUINCUNX);
+	rsxTextureWrapMode(context,OGL.textureUnit_id,GCM_TEXTURE_REPEAT,GCM_TEXTURE_REPEAT,GCM_TEXTURE_CLAMP_TO_EDGE,0,GCM_TEXTURE_ZFUNC_LESS,0);
+//	dbg_printf("TextureCache_ActivateDummy %d\r\n", t);
 #elif defined(__GX__)
 	if (cache.dummy->GXtexture != NULL) 
 	{

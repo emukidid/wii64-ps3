@@ -428,7 +428,7 @@ void Config_LoadConfig()
 	OGL.forceBilinear = 0;
 	OGL.enable2xSaI = glN64_use2xSaiTextures;
 	OGL.fog = 1;
-	OGL.textureBitDepth = 1; // normal (16 & 32 bits)
+	OGL.textureBitDepth = 2; // 32-bit only (best for 2xSaI)
 	OGL.frameBufferTextures = glN64_useFrameBufferTextures;
 	OGL.usePolygonStipple = 0;
 	cache.maxBytes = 32 * 1048576;	

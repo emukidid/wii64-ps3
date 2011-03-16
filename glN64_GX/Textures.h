@@ -14,20 +14,29 @@
 
 #if !(defined(__GX__)||defined(PS3))
 #include <GL/gl.h>
-#else // !__GX__
+#else // !__GX__ !PS3
 #define __WIN32__
 #include "gl.h" 
 #include "glext.h"
 #undef __WIN32__
-#ifdef HW_RVL
-#include "../gc_memory/MEM2.h"
-#endif //HW_RVL
+# ifdef HW_RVL
+# include "../gc_memory/MEM2.h"
+# endif //HW_RVL
+# ifdef PS3
+# include <rsx/rsx.h>
+# endif //PS3
 #endif // __GX__
 #include "convert.h"
 
 struct CachedTexture
 {
-#ifdef __GX__
+#ifdef PS3
+	gcmTexture rsxTex;
+	u32 rsxTextureOffset;
+	u32 *rsxTextureBuffer;
+	u8 rsxFmt;
+	u8 rsxWraps, rsxWrapt;
+#elif defined(__GX__)
 	GXTexObj	GXtex;
 	u16			*GXtexture;
 	u8			GXtexfmt;

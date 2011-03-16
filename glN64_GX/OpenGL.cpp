@@ -954,7 +954,9 @@ void OGL_UpdateStates()
 		}
 		else
 		{
+#ifndef PS3  //TEMPORARY
 			TextureCache_ActivateDummy( 1 );
+#endif
 		}
 		Combiner_EndTextureUpdate();
 	}
@@ -1257,7 +1259,11 @@ void OGL_DrawTriangles()
 	for (int i = 0; i < OGL.numVertices; i++) {
 		rsxDrawVertex4f(context, OGL.vertexColor0_id, OGL.vertices[i].color.r, OGL.vertices[i].color.g, 
 			OGL.vertices[i].color.b, OGL.vertices[i].color.a);
-		rsxDrawVertex2f(context, OGL.vertexTexcoord_id, OGL.vertices[i].s1,OGL.vertices[i].t1);
+		//TODO: Add 2nd Tex Coord
+		//rsxDrawVertex2f(context, OGL.vertexTexcoord_id, OGL.vertices[i].s1,OGL.vertices[i].t1);
+		if (combiner.usesT0)		rsxDrawVertex2f(context, OGL.vertexTexcoord_id, OGL.vertices[i].s0,OGL.vertices[i].t0);
+		else if (combiner.usesT1)	rsxDrawVertex2f(context, OGL.vertexTexcoord_id, OGL.vertices[i].s1,OGL.vertices[i].t1);
+		else						rsxDrawVertex2f(context, OGL.vertexTexcoord_id, 0.0f, 0.0f);
 		rsxDrawVertex4f(context, OGL.vertexPosition_id, OGL.vertices[i].x, OGL.vertices[i].y, OGL.vertices[i].z, OGL.vertices[i].w);
 	}
 	rsxDrawVertexEnd(context);
