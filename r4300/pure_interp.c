@@ -38,7 +38,24 @@
 #include "interupt.h"
 #include <ppu-types.h>
 
+#ifdef PPC_DYNAREC
+#include "Invalid_Code.h"
+#include "ARAM-blocks.h"
+
+static void invalidate_func(unsigned int addr){
+  PowerPC_block* block = blocks_get(addr>>12);
+	PowerPC_func* func = find_func(&block->funcs, addr);
+	if(func)
+		RecompCache_Free(func->start_addr);
+}
+
+#define check_memory() \
+	if(dynacore && !invalid_code_get(address>>12)/* && \
+	   blocks[address>>12]->code_addr[(address&0xfff)>>2]*/) \
+		invalidate_func(address); //invalid_code_set(address>>12, 1);
+#else
 #define check_memory()
+#endif
 
 u32 op;
 static s32 skip;

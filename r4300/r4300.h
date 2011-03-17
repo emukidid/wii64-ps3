@@ -86,7 +86,7 @@ int check_cop1_unusable();
 void shuffle_fpr_data(int oldStatus, int newStatus);
 void set_fpr_pointers(int newStatus);
 
-#define jump_to(a) { jump_to_address = a; jump_to_func(); }
+//#define jump_to(a) { jump_to_address = a; jump_to_func(); }
 
 // profiling
 

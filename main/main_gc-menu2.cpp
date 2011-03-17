@@ -74,7 +74,7 @@ extern "C" {
 
 int s, running;
 struct sockaddr_in server;
-#define TESTIP				"192.168.2.3"
+#define TESTIP				"192.168.1.100"
 #define TESTPORT			18194
 
 
@@ -174,6 +174,7 @@ char menuActive;
 
 //TODO: remove these declarations
 u32 dynacore;
+u32 interpcore;
 
 static struct {
 	char* key;

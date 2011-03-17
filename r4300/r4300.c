@@ -36,6 +36,7 @@
 #include "macros.h"
 #include "recomp.h"
 #include "Invalid_Code.h"
+#include "ppc/Recompile.h"
 #include <malloc.h>
 #include <sysutil/sysutil.h>
 R4300 r4300;
@@ -47,10 +48,10 @@ tlb tlb_e[32];
 u32 dyna_interp = 0;
 unsigned long long int debug_count = 0;
 precomp_instr *PC = NULL;
-//char invalid_code[0x100000];
+PowerPC_block *blocks[0x100000];
+PowerPC_block *actual;
 int rounding_mode = 0x33F, trunc_mode = 0xF3F, round_mode = 0x33F,
     ceil_mode = 0xB3F, floor_mode = 0x73F;
-
 
 inline u32 update_invalid_addr(u32 addr)
 {
@@ -177,31 +178,67 @@ int check_cop1_unusable()
    return 0;
 }
 
-int checkCallback = 0;
-
 void update_count()
 {
 	//sprintf(txtbuffer, "trace: addr = 0x%08x\n", r4300.pc);
 	Count = Count + (r4300.pc - r4300.last_pc) / 2;
 	r4300.last_pc = r4300.pc;
-/*	if(checkCallback > 250) {
-		sysUtilCheckCallback();
-		checkCallback = 0;
-	}*/
-	checkCallback++;
 }
 
 void init_blocks()
 {
+   int i;
+   for (i=0; i<0x100000; i++)
+     {
+	invalid_code_set(i, 1);
+	blocks_set(i, NULL);
+     }
+#ifndef PPC_DYNAREC
+   blocks[0xa4000000>>12] = malloc(sizeof(precomp_block));
+   blocks[0xa4000000>>12]->code = NULL;
+   blocks[0xa4000000>>12]->block = NULL;
+   blocks[0xa4000000>>12]->jumps_table = NULL;
+   blocks[0xa4000000>>12]->start = 0xa4000000;
+   blocks[0xa4000000>>12]->end = 0xa4001000;
+#else
+   PowerPC_block* temp_block = malloc(sizeof(PowerPC_block));
+   blocks_set(0xa4000000>>12, temp_block);
+   //blocks[0xa4000000>>12]->code_addr = NULL;
+   temp_block->funcs = NULL;
+   temp_block->start_address = 0xa4000000;
+   temp_block->end_address = 0xa4001000;
+#endif
+   invalid_code_set(0xa4000000>>12, 1);
+   actual=temp_block;
+   init_block(SP_DMEM, temp_block);
 
+#ifdef DBG
+   if (debugger_mode) // debugger shows initial state (before 1st instruction).
+     update_debugger();
+#endif
 }
 
 static int cpu_inited;
 void go()
 {
 	r4300.stop = 0;
-	pure_interpreter();
-
+	
+	if(dynacore == 2) {
+		dynacore = 0;
+		interpcore = 1;
+		pure_interpreter();
+		dynacore = 2;
+	} else {
+		interpcore = 0;
+		dynacore = 1;
+		//printf("dynamic recompiler\n");
+		if(cpu_inited) {
+			RecompCache_Init();
+			init_blocks();
+			cpu_inited = 0;
+		}
+		dynarec(r4300.pc);
+	}
 	debug_count += Count;
 }
 extern void dbg_printf(const char *fmt,...);
@@ -445,8 +482,36 @@ void cpu_init(void){
 }
 
 void cpu_deinit(void){
-	// No need to check these if we were in the pure interp
-if(PC) free(PC);
+	if(dynacore != 2 && !cpu_inited) {
+		for (i = 0; i < 0x100000; i++) {
+			PowerPC_block* temp_block = blocks_get(i);
+			if(temp_block) {
+#ifdef PPC_DYNAREC
+				deinit_block(temp_block);
+#else
+				if (temp_block->block) {
+#ifdef USE_RECOMP_CACHE
+					invalidate_block(temp_block);
+#else
+					free(temp_block->block);
+#endif
+					temp_block->block = NULL;
+				}
+				if (temp_block->code) {
+					free(temp_block->code);
+					temp_block->code = NULL;
+				}
+				if (temp_block->jumps_table) {
+					free(temp_block->jumps_table);
+					temp_block->jumps_table = NULL;
+				}
+#endif
+				free(temp_block);
+				blocks_set(i, NULL);
+			}
+		}
+	}
+	if(PC) free(PC);
 	PC = NULL;
 }
 
