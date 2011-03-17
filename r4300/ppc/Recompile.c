@@ -87,8 +87,42 @@ void set_next_dst(PowerPC_instr i){ *(ppc_dst++) = i; ++code_length; }
 // Adjusts the code_addr for the current instruction to account for flushes
 void reset_code_addr(void){ if(src<=src_last) code_addr[src-1-src_first] = ppc_dst; }
 
-void DCFlushRange(void *startaddress,u32 len){}
-void ICInvalidateRange(void *startaddress,u32 len){}
+void DCFlushRange(void* startaddr, unsigned int len){
+	if(len == 0) return;
+	__asm__ volatile (
+		"clrlwi.	5, %0, 27\n" 
+		"beq	1f\n" 
+		"addi	%1, %1, 0x20\n" 
+		"1:\n" 
+		"addi	%1, %1, 0x1f\n" 
+		"srwi	%1, %1, 5\n" 
+		"mtctr	%1\n" 
+		"2:\n" 
+		"dcbf	0, %0\n" 
+		"addi	%0, %0, 0x20\n" 
+		"bdnz	2b\n" 
+		"sync\n"
+		: : "b" (startaddr), "b" (len) : "5", "memory" );
+}
+
+void ICInvalidateRange(void* startaddr, unsigned int len)  {
+	if(len == 0) return;
+	__asm__ volatile (
+		"clrlwi.	5, %0, 27\n" 
+		"beq	1f\n" 
+		"addi	%1, %1, 0x20\n" 
+		"1:\n" 
+		"addi	%1, %1, 0x1f\n" 
+		"srwi	%1, %1, 5\n" 
+		"mtctr	%1\n" 
+		"2:\n" 
+		"icbi	0, %0\n" 
+		"addi	%0, %0, 0x20\n" 
+		"bdnz	2b\n" 
+		"sync\n" 
+		"isync\n"
+		: : "b" (startaddr), "b" (len) : "5", "memory" );
+}
 
 int add_jump(int old_jump, int is_j, int is_call){
 	int id = current_jump;

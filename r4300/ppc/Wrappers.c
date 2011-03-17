@@ -111,18 +111,15 @@ void dynarec(unsigned int address){
 		start_section(TRAMP_SECTION);
 		PowerPC_block* dst_block = blocks_get(address>>12);
 		u32 paddr = update_invalid_addr(address);
-		/*
-		sprintf(txtbuffer, "trampolining to 0x%08x\n", address);
-		DEBUG_print(txtbuffer, DBG_USBGECKO);
-		*/
+
+		dbg_printf("trampolining to 0x%08x\n", address);
 		if(!paddr){ 
 			address = paddr = update_invalid_addr(r4300.pc);
 			dst_block = blocks_get(address>>12); 
 		}
 		
 		if(!dst_block){
-			/*sprintf(txtbuffer, "block at %08x doesn't exist\n", address&~0xFFF);
-			DEBUG_print(txtbuffer, DBG_USBGECKO);*/
+			dbg_printf("block at %08x doesn't exist\n", address&~0xFFF);
 			dst_block = malloc(sizeof(PowerPC_block));
 			blocks_set(address>>12, dst_block);
 			//dst_block->code_addr     = NULL;
@@ -143,8 +140,7 @@ void dynarec(unsigned int address){
 		PowerPC_func* func = find_func(&dst_block->funcs, address);
 
 		if(!func || !func->code_addr[(address-func->start_addr)>>2]){
-			/*sprintf(txtbuffer, "code at %08x is not compiled\n", address);
-			DEBUG_print(txtbuffer, DBG_USBGECKO);*/
+			dbg_printf("code at %08x is not compiled\n", address);
 			if((paddr >= 0xb0000000 && paddr < 0xc0000000) ||
 			   (paddr >= 0x90000000 && paddr < 0xa0000000))
 				dst_block->mips_code =
@@ -169,6 +165,7 @@ void dynarec(unsigned int address){
 			RecompCache_Link(last_func, link_branch, func, code);
 		clear_freed_funcs();
 		
+		dbg_printf("calling dyna_run func %08X code %08X\n", func, code);
 		r4300.pc = address = dyna_run(func, code);
 
 		if(!noCheckInterrupt){
