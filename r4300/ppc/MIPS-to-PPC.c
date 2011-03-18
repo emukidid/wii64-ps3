@@ -139,6 +139,18 @@ static void genCmp64(int cr, int _ra, int _rb){
 	}
 }
 
+static void genCall(void* func){
+	PowerPC_instr ppc;
+	GEN_LIS(ppc, 12, ((unsigned int)func)>>16);
+	set_next_dst(ppc);
+	GEN_ORI(ppc, 12, 12, (unsigned int)func);
+	set_next_dst(ppc);
+	GEN_MTCTR(ppc, 12);
+	set_next_dst(ppc);
+	GEN_BCTRL(ppc);
+	set_next_dst(ppc);
+}
+
 static void genCmpi64(int cr, int _ra, short immed){
 	PowerPC_instr ppc;
 	
@@ -2754,8 +2766,7 @@ static int ERET(MIPS_instr mips){
 	GEN_STW(ppc, 3, 12*4, DYNAREG_COP0);
 	set_next_dst(ppc);
 	// check_interupt()
-	GEN_B(ppc, add_jump(&check_interupt, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(&check_interupt);
 	// Load the old LR
 	GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
 	set_next_dst(ppc);
@@ -3243,8 +3254,7 @@ static int SQRT_FP(MIPS_instr mips, int dbl){
 	invalidateRegisters();
 
 	// call sqrt
-	GEN_B(ppc, add_jump(dbl ? &sqrt : &sqrtf, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &sqrt : &sqrtf);
 
 	mapFPRNew( MIPS_GET_FD(mips), dbl ); // maps to f1 (FP return)
 
@@ -3336,7 +3346,7 @@ static void set_rounding_reg(int fs){
 }
 
 static int ROUND_L_FP(MIPS_instr mips, int dbl){
-/*	PowerPC_instr ppc;
+	PowerPC_instr ppc;
 #if defined(INTERPRET_FP) || defined(INTERPRET_FP_ROUND_L)
 	genCallInterp(mips);
 	return INTERPRETED;
@@ -3350,11 +3360,9 @@ static int ROUND_L_FP(MIPS_instr mips, int dbl){
 	invalidateFPR( MIPS_GET_FS(mips) );
 
 	// round
-	GEN_B(ppc, add_jump(dbl ? &round : &roundf, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &round : &roundf);
 	// convert
-	GEN_B(ppc, add_jump(dbl ? &__fixdfdi : &__fixsfdi, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &__fixdfdi : &__fixsfdi);
 	
 	int addr = 5; // Use r5 for the addr (to not clobber r3/r4)
 	// addr = r4300.fpr_double[fd]
@@ -3374,7 +3382,7 @@ static int ROUND_L_FP(MIPS_instr mips, int dbl){
 	set_next_dst(ppc);
 
 	return CONVERT_SUCCESS;
-#endif*/
+#endif
 }
 
 static int TRUNC_L_FP(MIPS_instr mips, int dbl){
@@ -3392,8 +3400,7 @@ static int TRUNC_L_FP(MIPS_instr mips, int dbl){
 	invalidateFPR( MIPS_GET_FS(mips) );
 
 	// convert
-	GEN_B(ppc, add_jump(dbl ? &__fixdfdi : &__fixsfdi, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &__fixdfdi : &__fixsfdi);
 	
 	int addr = 5; // Use r5 for the addr (to not clobber r3/r4)
 	// addr = r4300.fpr_double[fd]
@@ -3431,11 +3438,9 @@ static int CEIL_L_FP(MIPS_instr mips, int dbl){
 	invalidateFPR( MIPS_GET_FS(mips) );
 
 	// ceil
-	GEN_B(ppc, add_jump(dbl ? &ceil : &ceilf, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &ceil : &ceilf);
 	// convert
-	GEN_B(ppc, add_jump(dbl ? &__fixdfdi : &__fixsfdi, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &__fixdfdi : &__fixsfdi);
 	
 	int addr = 5; // Use r5 for the addr (to not clobber r3/r4)
 	// addr = r4300.fpr_double[fd]
@@ -3473,11 +3478,9 @@ static int FLOOR_L_FP(MIPS_instr mips, int dbl){
 	invalidateFPR( MIPS_GET_FS(mips) );
 
 	// round
-	GEN_B(ppc, add_jump(dbl ? &floor : &floorf, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &floor : &floorf);
 	// convert
-	GEN_B(ppc, add_jump(dbl ? &__fixdfdi : &__fixsfdi, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &__fixdfdi : &__fixsfdi);
 	
 	int addr = 5; // Use r5 for the addr (to not clobber r3/r4)
 	// addr = r4300.fpr_double[fd]
@@ -3724,8 +3727,7 @@ static int CVT_L_FP(MIPS_instr mips, int dbl){
 
 	// FIXME: I'm fairly certain this will always trunc
 	// convert
-	GEN_B(ppc, add_jump(dbl ? &__fixdfdi : &__fixsfdi, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &__fixdfdi : &__fixsfdi);
 	
 	int addr = 5; // Use r5 for the addr (to not clobber r3/r4)
 	// addr = r4300.fpr_double[fd]
@@ -4378,7 +4380,7 @@ static int W(MIPS_instr mips){
 }
 
 static int CVT_FP_L(MIPS_instr mips, int dbl){
-/*	PowerPC_instr ppc;
+	PowerPC_instr ppc;
 	
 	genCheckFP();
 
@@ -4400,8 +4402,7 @@ static int CVT_FP_L(MIPS_instr mips, int dbl){
 	set_next_dst(ppc);
 
 	// convert
-	GEN_B(ppc, add_jump(dbl ? &__floatdidf : &__floatdisf, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(dbl ? &__floatdidf : &__floatdisf);
 	
 	// Load old LR
 	GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
@@ -4413,7 +4414,7 @@ static int CVT_FP_L(MIPS_instr mips, int dbl){
 	unmapRegisterTemp(hi);
 	unmapRegisterTemp(lo);
 
-	return CONVERT_SUCCESS;*/
+	return CONVERT_SUCCESS;
 }
 
 static int L(MIPS_instr mips){
@@ -4463,9 +4464,6 @@ static void genCallInterp(MIPS_instr mips){
 	// Pass in whether this instruction is in the delay slot
 	GEN_LI(ppc, 5, 0, isDelaySlot ? 1 : 0);
 	set_next_dst(ppc);
-	// Move the address of decodeNInterpret to ctr for a bctr
-	//GEN_MTCTR(ppc, DYNAREG_INTERP);
-	//set_next_dst(ppc);
 	// Load our argument into r3 (mips)
 	GEN_LIS(ppc, 3, mips>>16);
 	set_next_dst(ppc);
@@ -4478,9 +4476,7 @@ static void genCallInterp(MIPS_instr mips){
 	GEN_ORI(ppc, 4, 4, get_src_pc());
 	set_next_dst(ppc);
 	// Branch to decodeNInterpret
-	//GEN_BCTRL(ppc);
-	GEN_B(ppc, add_jump(&decodeNInterpret, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(&decodeNInterpret);
 	// Load the old LR
 	GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
 	set_next_dst(ppc);
@@ -4518,8 +4514,7 @@ static void genJumpTo(unsigned int loc, unsigned int type){
 		GEN_ADDI(ppc, 3, DYNAREG_FUNC, 0);
 		set_next_dst(ppc);
 		// Call RecompCache_Update(func)
-		GEN_B(ppc, add_jump(&RecompCache_Update, 1, 1), 0, 1);
-		set_next_dst(ppc);
+		genCall(&RecompCache_Update);
 		// Restore LR
 		GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
 		set_next_dst(ppc);
@@ -4535,6 +4530,12 @@ static void genJumpTo(unsigned int loc, unsigned int type){
 		set_next_dst(ppc);
 		// Store r4300.last_pc for linking
 		GEN_STW(ppc, 3, 0, DYNAREG_LADDR);
+		set_next_dst(ppc);
+		// Linking must be performed using ctr: the memory space is too large
+		GEN_ORI(ppc, 0, 0, 0);
+		set_next_dst(ppc);
+		set_next_dst(ppc);
+		GEN_MTCTR(ppc, 12);
 		set_next_dst(ppc);
 	}
 
@@ -4594,8 +4595,7 @@ static void genUpdateCount(int checkCount){
 	GEN_ORI(ppc, 3, 3, get_src_pc()+4);
 	set_next_dst(ppc);
 	// Call dyna_update_count
-	GEN_B(ppc, add_jump(&dyna_update_count, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(&dyna_update_count);
 	// Load the lr
 	GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
 	set_next_dst(ppc);
@@ -4622,7 +4622,8 @@ static void genCheckFP(void){
 		GEN_ANDIS(ppc, 0, 0, 0x2000);
 		set_next_dst(ppc);
 		// bne cr0, end
-		GEN_BNE(ppc, 0, 8, 0, 0);
+		//GEN_BNE(ppc, 0, 8, 0, 0);
+		GEN_BNE(ppc, 0, 11, 0, 0);	//why was this changed?
 		set_next_dst(ppc);
 		// Move &dyna_check_cop1_unusable to ctr for call
 		//GEN_MTCTR(ppc, DYNAREG_CHKFP);
@@ -4637,9 +4638,7 @@ static void genCheckFP(void){
 		GEN_ORI(ppc, 3, 3, get_src_pc());
 		set_next_dst(ppc);
 		// Call dyna_check_cop1_unusable
-		//GEN_BCTRL(ppc);
-		GEN_B(ppc, add_jump(&dyna_check_cop1_unusable, 1, 1), 0, 1);
-		set_next_dst(ppc);
+		genCall(&dyna_check_cop1_unusable);
 		// Load the old LR
 		GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
 		set_next_dst(ppc);
@@ -4674,8 +4673,7 @@ void genCallDynaMem(memType type, int base, short immed){
 	GEN_LI(ppc, 7, 0, isDelaySlot ? 1 : 0);
 	set_next_dst(ppc);
 	// call dyna_mem
-	GEN_B(ppc, add_jump(&dyna_mem, 1, 1), 0, 1);
-	set_next_dst(ppc);
+	genCall(&dyna_mem);
 	// Load old LR
 	GEN_LWZ(ppc, 0, DYNAOFF_LR, 1);
 	set_next_dst(ppc);
