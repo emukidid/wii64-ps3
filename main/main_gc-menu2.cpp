@@ -225,9 +225,6 @@ void new_frame(){ }
 void new_vi(){ }
 int loadROM();
 
-extern u32 *color_buffer[2];
-extern VideoResolution res;
-
 int main(int argc, char* argv[]){
 
 	/* INITIALIZE */
@@ -386,7 +383,7 @@ int main(int argc, char* argv[]){
 	for(i=1; i<argc; ++i){
 		handleConfigPair(argv[i]);
 	}
-#endif */
+#endif
 	running = 1;
 	while (menu->isRunning() && running) {}
 

@@ -12,7 +12,7 @@
 
 #define GCM_LABEL_INDEX		255
 
-VideoResolution res;
+videoResolution res;
 gcmContextData *context = NULL;
 
 u32 curr_fb = 0;
@@ -93,13 +93,13 @@ void init_screen(void *host_addr,u32 size)
 {
 	context = rsxInit(CB_SIZE,size,host_addr);
 
-	VideoState state;
+	videoState state;
 	videoGetState(0,0,&state);
 
 	videoGetResolution(state.displayMode.resolution,&res);
 
-	VideoConfiguration vconfig;
-	memset(&vconfig,0,sizeof(VideoConfiguration));
+	videoConfiguration vconfig;
+	memset(&vconfig,0,sizeof(videoConfiguration));
 
 	vconfig.resolution = state.displayMode.resolution;
 	vconfig.format = VIDEO_BUFFER_FORMAT_XRGB;
