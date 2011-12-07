@@ -24,7 +24,7 @@
 #include "GraphicsGX.h"
 #else //__GX__
 #include "GraphicsRSX.h"
-#include <ppu-lv2.h>
+#include <sys/systime.h>
 #endif //!__GX__
 #include "IPLFont.h"
 #include "Image.h"
@@ -139,7 +139,7 @@ void Button::setFontSize(float size)
 #ifdef __GX__
 #include "ogc/lwp_watchdog.h"
 #else //__GX__
-#define TB_BUS_CLOCK				(lv2syscall0(147))					//1.6ghz
+#define TB_BUS_CLOCK				(sysGetTimebaseFrequency())		//1.6ghz
 #define TB_TIMER_CLOCK				(TB_BUS_CLOCK/4000)			//4th of the bus frequency
 
 u32 _DEFUN(gettick,(),
